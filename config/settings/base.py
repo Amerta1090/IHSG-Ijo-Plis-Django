@@ -22,6 +22,7 @@ INSTALLED_APPS = [
 
 try:
     import django_celery_beat  # noqa: F401
+
     INSTALLED_APPS += ["django_celery_beat"]
 except ImportError:
     pass

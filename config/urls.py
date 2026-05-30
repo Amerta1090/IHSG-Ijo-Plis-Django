@@ -1,3 +1,7 @@
+from django.urls import path
+
+from apps.predictor.views import index
+
 urlpatterns = [
-    # Sprint 3 will add dashboard views here
+    path("", index, name="index"),
 ]

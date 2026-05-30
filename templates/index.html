@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}IHSG Predictor{% endblock %}
+{% block content %}
+<div class="flex flex-col items-center justify-center py-24 text-center">
+    <h1 class="text-5xl font-bold text-[#f59e0b] mb-4">IHSG Predictor</h1>
+    <p class="text-[#94a3b8] text-lg max-w-xl">
+        Prediksi IHSG berbasis machine learning.
+        Dashboard akan tersedia di Sprint 3.
+    </p>
+    <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-3xl">
+        <div class="bg-[#141b2d] rounded-xl p-6 border border-[#1e293b]">
+            <div class="text-2xl font-bold text-[#22c55e]">2,409</div>
+            <div class="text-sm text-[#64748b] mt-1">Data Point Historis</div>
+        </div>
+        <div class="bg-[#141b2d] rounded-xl p-6 border border-[#1e293b]">
+            <div class="text-2xl font-bold text-[#f59e0b]">4</div>
+            <div class="text-sm text-[#64748b] mt-1">Model Version</div>
+        </div>
+        <div class="bg-[#141b2d] rounded-xl p-6 border border-[#1e293b]">
+            <div class="text-2xl font-bold text-[#3b82f6]">90</div>
+            <div class="text-sm text-[#64748b] mt-1">Hari Prediksi</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
