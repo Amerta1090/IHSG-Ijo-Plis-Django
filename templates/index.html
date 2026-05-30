@@ -1,25 +1,188 @@
 {% extends "base.html" %}
-{% block title %}IHSG Predictor{% endblock %}
+{% load static %}
+{% block title %}Dashboard — IHSG Predictor{% endblock %}
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+    @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+    .skeleton { background: linear-gradient(90deg, #141b2d 25%, #1a2338 50%, #141b2d 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 0.75rem; }
+    .skeleton-text { height: 1rem; width: 60%; margin-bottom: 0.5rem; }
+    .skeleton-value { height: 2rem; width: 40%; margin-bottom: 0.25rem; }
+    .skeleton-chart { height: 400px; width: 100%; }
+    .count-up { transition: opacity 0.5s; }
+    .tab-active { background: #f59e0b; color: #0a0f1e; font-weight: 600; }
+    .range-active { background: #1a2338; border-color: #f59e0b; color: #f59e0b; }
+    .confidence-ring { transform: rotate(-90deg); }
+    .confidence-ring circle { transition: stroke-dashoffset 1.5s ease-out; }
+    @media (max-width: 640px) { .chart-container { height: 300px; } }
+    @media (min-width: 641px) { .chart-container { height: 450px; } }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="flex flex-col items-center justify-center py-24 text-center">
-    <h1 class="text-5xl font-bold text-[#f59e0b] mb-4">IHSG Predictor</h1>
-    <p class="text-[#94a3b8] text-lg max-w-xl">
-        Prediksi IHSG berbasis machine learning.
-        Dashboard akan tersedia di Sprint 3.
-    </p>
-    <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-3xl">
-        <div class="bg-[#141b2d] rounded-xl p-6 border border-[#1e293b]">
-            <div class="text-2xl font-bold text-[#22c55e]">2,409</div>
-            <div class="text-sm text-[#64748b] mt-1">Data Point Historis</div>
+<div id="dashboard" class="space-y-6">
+
+    <!-- Skeleton Shimmer -->
+    <div id="skeleton" class="space-y-6">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {% for _ in "1234" %}<div class="skeleton p-6"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-value"></div><div class="skeleton skeleton-text" style="width:30%"></div></div>{% endfor %}
         </div>
-        <div class="bg-[#141b2d] rounded-xl p-6 border border-[#1e293b]">
-            <div class="text-2xl font-bold text-[#f59e0b]">4</div>
-            <div class="text-sm text-[#64748b] mt-1">Model Version</div>
-        </div>
-        <div class="bg-[#141b2d] rounded-xl p-6 border border-[#1e293b]">
-            <div class="text-2xl font-bold text-[#3b82f6]">90</div>
-            <div class="text-sm text-[#64748b] mt-1">Hari Prediksi</div>
+        <div class="skeleton skeleton-chart p-4"></div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {% for _ in "123" %}<div class="skeleton p-6 h-32"></div>{% endfor %}
         </div>
     </div>
+
+    <!-- Actual content (hidden until JS hides skeleton) -->
+    <div id="dashboard-content" class="hidden space-y-6">
+
+        <!-- Hero Metrics -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4" id="hero-metrics">
+            <div class="metric-card bg-[#141b2d] rounded-xl p-5 border border-[#1e293b] hover:border-[#f59e0b]/30 transition-all duration-300">
+                <div class="text-xs font-medium text-[#94a3b8] uppercase tracking-wide">IHSG Now</div>
+                <div class="text-2xl sm:text-3xl font-bold text-[#f1f5f9] mt-1 font-mono count-up" data-value="{{ ihsg_now|default:'0' }}" data-prefix="" data-suffix="">0</div>
+                <div class="text-xs text-[#64748b] mt-1">Last closing price</div>
+            </div>
+            <div class="metric-card bg-[#141b2d] rounded-xl p-5 border border-[#1e293b] hover:border-[#f59e0b]/30 transition-all duration-300">
+                <div class="text-xs font-medium text-[#94a3b8] uppercase tracking-wide">Change</div>
+                <div class="text-2xl sm:text-3xl font-bold font-mono mt-1 {% if change_pct >= 0 %}text-[#22c55e]{% else %}text-[#ef4444]{% endif %}">
+                    <span class="count-up" data-value="{{ change_value|default:'0' }}" data-prefix="" data-suffix="" data-decimals="2">0</span>
+                    <span class="text-lg">(</span>
+                    <span class="count-up text-lg" data-value="{{ change_pct|default:'0' }}" data-prefix="" data-suffix="%" data-decimals="2">0</span>
+                    <span class="text-lg">)</span>
+                </div>
+                <div class="text-xs text-[#64748b] mt-1">vs yesterday</div>
+            </div>
+            <div class="metric-card bg-[#141b2d] rounded-xl p-5 border border-[#1e293b] hover:border-[#f59e0b]/30 transition-all duration-300">
+                <div class="text-xs font-medium text-[#94a3b8] uppercase tracking-wide">Week Change</div>
+                <div class="text-2xl sm:text-3xl font-bold font-mono mt-1 {% if week_change_pct >= 0 %}text-[#22c55e]{% else %}text-[#ef4444]{% endif %}">
+                    <span class="count-up" data-value="{{ week_change_value|default:'0' }}" data-prefix="" data-suffix="" data-decimals="2">0</span>
+                    <span class="text-lg">(</span>
+                    <span class="count-up text-lg" data-value="{{ week_change_pct|default:'0' }}" data-prefix="" data-suffix="%" data-decimals="2">0</span>
+                    <span class="text-lg">)</span>
+                </div>
+                <div class="text-xs text-[#64748b] mt-1">vs 5 trading days ago</div>
+            </div>
+            <div class="metric-card bg-[#141b2d] rounded-xl p-5 border border-[#1e293b] hover:border-[#f59e0b]/30 transition-all duration-300">
+                <div class="text-xs font-medium text-[#94a3b8] uppercase tracking-wide">Prediksi 30d</div>
+                <div class="text-2xl sm:text-3xl font-bold text-[#f59e0b] mt-1 font-mono count-up" data-value="{{ prediksi_30d|default:'0' }}" data-prefix="" data-suffix="">0</div>
+                <div class="text-xs text-[#64748b] mt-1">Forecast 30 days ahead</div>
+            </div>
+        </div>
+
+        <!-- Timeframe Tabs + Range Selector -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div class="flex space-x-2 bg-[#141b2d] rounded-lg p-1 border border-[#1e293b] w-fit" id="timeframe-tabs">
+                <button class="tab-btn px-4 py-1.5 text-sm rounded-md text-[#94a3b8] hover:text-[#f1f5f9] transition" data-period="7">7d</button>
+                <button class="tab-btn px-4 py-1.5 text-sm rounded-md tab-active transition" data-period="30">30d</button>
+                <button class="tab-btn px-4 py-1.5 text-sm rounded-md text-[#94a3b8] hover:text-[#f1f5f9] transition" data-period="90">90d</button>
+            </div>
+            <div class="flex items-center space-x-2 text-xs" id="range-selector">
+                <span class="text-[#64748b] hidden sm:inline">Range:</span>
+                <button class="range-btn px-3 py-1.5 rounded-md border border-[#1e293b] text-[#94a3b8] hover:bg-[#1a2338] transition" data-range="1M">1M</button>
+                <button class="range-btn px-3 py-1.5 rounded-md border border-[#1e293b] text-[#94a3b8] hover:bg-[#1a2338] transition" data-range="3M">3M</button>
+                <button class="range-btn px-3 py-1.5 rounded-md border border-[#1e293b] range-active transition" data-range="6M">6M</button>
+                <button class="range-btn px-3 py-1.5 rounded-md border border-[#1e293b] text-[#94a3b8] hover:bg-[#1a2338] transition" data-range="1Y">1Y</button>
+                <button class="range-btn px-3 py-1.5 rounded-md border border-[#1e293b] text-[#94a3b8] hover:bg-[#1a2338] transition" data-range="ALL">ALL</button>
+            </div>
+        </div>
+
+        <!-- Hybrid Chart -->
+        <div class="bg-[#141b2d] rounded-xl border border-[#1e293b] p-4 sm:p-6">
+            <div class="chart-container relative">
+                <canvas id="hybridChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Statistics Row -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            <!-- Confidence Score -->
+            <div class="bg-[#141b2d] rounded-xl border border-[#1e293b] p-5 flex items-center space-x-5">
+                <div class="relative w-24 h-24 flex-shrink-0">
+                    <svg class="confidence-ring w-24 h-24" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="42" fill="none" stroke="#1e293b" stroke-width="8"/>
+                        <circle id="confidence-arc" cx="50" cy="50" r="42" fill="none" stroke="#22c55e" stroke-width="8"
+                            stroke-linecap="round" stroke-dasharray="263.89" stroke-dashoffset="263.89"/>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span id="confidence-text" class="text-2xl font-bold font-mono text-[#f1f5f9]">{{ confidence_score }}</span>
+                    </div>
+                </div>
+                <div>
+                    <div class="text-sm font-medium text-[#94a3b8]">Confidence Score</div>
+                    <div class="text-xs text-[#64748b] mt-1">Based on prediction uncertainty width</div>
+                </div>
+            </div>
+
+            <!-- Sentiment Badge -->
+            <div class="bg-[#141b2d] rounded-xl border border-[#1e293b] p-5 flex items-center space-x-5">
+                <div id="sentiment-icon" class="w-12 h-12 rounded-full flex items-center justify-center
+                    {% if sentiment == 'Bullish' %}bg-[#22c55e]/20
+                    {% elif sentiment == 'Bearish' %}bg-[#ef4444]/20
+                    {% else %}bg-[#3b82f6]/20{% endif %}">
+                    {% if sentiment == 'Bullish' %}
+                    <svg class="w-6 h-6 text-[#22c55e]" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941"/></svg>
+                    {% elif sentiment == 'Bearish' %}
+                    <svg class="w-6 h-6 text-[#ef4444]" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6 9 12.75l4.286-4.286a11.948 11.948 0 0 1 4.306 6.43l.776 2.898m0 0 3.182-5.511m-3.182 5.51-5.511-3.181"/></svg>
+                    {% else %}
+                    <svg class="w-6 h-6 text-[#3b82f6]" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14"/></svg>
+                    {% endif %}
+                </div>
+                <div>
+                    <div class="text-sm font-medium text-[#94a3b8]">Market Sentiment</div>
+                    <div id="sentiment-label" class="text-xl font-bold mt-0.5
+                        {% if sentiment == 'Bullish' %}text-[#22c55e]
+                        {% elif sentiment == 'Bearish' %}text-[#ef4444]
+                        {% else %}text-[#3b82f6]{% endif %}">{{ sentiment }}</div>
+                    <div class="text-xs text-[#64748b] mt-1">Based on 30d prediction trend</div>
+                </div>
+            </div>
+
+            <!-- Last Updated / Refresh -->
+            <div class="bg-[#141b2d] rounded-xl border border-[#1e293b] p-5 flex items-center space-x-5">
+                <div class="w-12 h-12 rounded-full bg-[#f59e0b]/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-6 h-6 text-[#f59e0b]" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium text-[#94a3b8]">Last Updated</div>
+                    <div class="text-base font-mono text-[#f1f5f9] mt-0.5 truncate" id="last-updated">
+                        {{ last_updated|default:"No data yet" }}
+                    </div>
+                    <div class="flex items-center space-x-3 mt-2">
+                        <button id="refresh-btn" class="text-xs px-3 py-1 rounded-md bg-[#1a2338] text-[#f59e0b] hover:bg-[#f59e0b]/20 border border-[#f59e0b]/30 transition flex items-center space-x-1">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182"/></svg>
+                            <span>Refresh Data</span>
+                        </button>
+                        <button id="export-btn" class="text-xs px-3 py-1 rounded-md bg-[#1a2338] text-[#94a3b8] hover:text-[#f1f5f9] border border-[#1e293b] transition flex items-center space-x-1">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                            <span>Export PNG</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/metrics.js' %}"></script>
+<script src="{% static 'js/chart.js' %}"></script>
+<script src="{% static 'js/components.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Hide skeleton, show content
+        document.getElementById('skeleton').classList.add('hidden');
+        document.getElementById('dashboard-content').classList.remove('hidden');
+
+        const historicalData = {{ historical_json|safe }};
+        const predictionData = {{ predictions_json|safe }};
+
+        initMetrics(historicalData, predictionData);
+        initChart(historicalData, predictionData);
+        initComponents(historicalData, predictionData);
+    });
+</script>
 {% endblock %}
