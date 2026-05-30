@@ -3,8 +3,7 @@ from .base import *  # noqa: F403
 DEBUG = False
 
 ALLOWED_HOSTS = os.environ.get(  # noqa: F405
-    "ALLOWED_HOSTS",
-    "localhost",
+    "ALLOWED_HOSTS", "localhost"
 ).split(",")
 
 SECURE_SSL_REDIRECT = True
@@ -20,16 +19,11 @@ LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-        },
+        "console": {"class": "logging.StreamHandler"},
         "file": {
             "class": "logging.FileHandler",
             "filename": BASE_DIR / "logs" / "django.log",  # noqa: F405
         },
     },
-    "root": {
-        "handlers": ["console", "file"],
-        "level": "INFO",
-    },
+    "root": {"handlers": ["console", "file"], "level": "INFO"},
 }

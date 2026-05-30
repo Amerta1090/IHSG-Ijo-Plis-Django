@@ -13,17 +13,12 @@ DEBUG = False
 ALLOWED_HOSTS: list[str] = []
 
 INSTALLED_APPS = [
-    "django.contrib.admin",
-    "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "apps.dashboard",
-    "apps.prediction",
-    "apps.historical",
-    "apps.users",
-    "apps.api",
+    "django_celery_beat",
+    "apps.predictor",
 ]
 
 MIDDLEWARE = [
@@ -31,7 +26,6 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -67,22 +61,6 @@ DATABASES = {
     }
 }
 
-AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": (
-        "django.contrib.auth.password_validation."
-        "UserAttributeSimilarityValidator"
-    )},
-    {"NAME": (
-        "django.contrib.auth.password_validation.MinimumLengthValidator"
-    )},
-    {"NAME": (
-        "django.contrib.auth.password_validation.CommonPasswordValidator"
-    )},
-    {"NAME": (
-        "django.contrib.auth.password_validation.NumericPasswordValidator"
-    )},
-]
-
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "Asia/Jakarta"
 USE_I18N = True
@@ -94,5 +72,12 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+CELERY_BROKER_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_TIMEZONE = "Asia/Jakarta"
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

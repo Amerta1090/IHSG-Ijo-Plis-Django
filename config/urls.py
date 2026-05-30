@@ -1,7 +1,3 @@
-from django.contrib import admin
-from django.urls import include, path
-
 urlpatterns = [
-    path("admin/", admin.site.urls),
-    path("historical/", include("apps.historical.urls")),
+    # Sprint 3 will add dashboard views here
 ]

@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from apps.prediction.services import PredictionService
+from apps.predictor.services import PredictionService
 
 
 class Command(BaseCommand):
@@ -10,9 +10,9 @@ class Command(BaseCommand):
         self.stdout.write("Loading Prophet model...")
         try:
             model = PredictionService.load_model()
-            model_name = type(model).__name__
-            self.stdout.write(self.style.SUCCESS(f"Model loaded: {model_name}"))
-            self.stdout.write("Running test prediction...")
+            name = type(model).__name__
+            self.stdout.write(self.style.SUCCESS(f"Model loaded: {name}"))
+            self.stdout.write("Running test prediction (5 days)...")
             result = PredictionService.predict(periods=5)
             self.stdout.write(self.style.SUCCESS(f"Prediction OK: {len(result)} rows"))
             for row in result:

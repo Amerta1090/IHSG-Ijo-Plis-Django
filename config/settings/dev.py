@@ -4,7 +4,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 
-INSTALLED_APPS += ["django_extensions"]  # noqa: F405
+INSTALLED_APPS += [  # noqa: F405
+    "django_extensions",
+]
 
 DATABASES = {
     "default": {
@@ -12,5 +14,3 @@ DATABASES = {
         "NAME": str(BASE_DIR / "db.sqlite3"),  # noqa: F405
     }
 }
-
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

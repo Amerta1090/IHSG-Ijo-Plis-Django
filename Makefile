@@ -1,10 +1,13 @@
-.PHONY: dev migrate shell test lint format load-model seed
+.PHONY: dev migrate shell test lint format load-model seed retrain fetch train predict
 
 dev:
 	python manage.py runserver
 
 migrate:
 	python manage.py migrate
+
+makemigrations:
+	python manage.py makemigrations
 
 shell:
 	python manage.py shell
@@ -21,5 +24,13 @@ format:
 load-model:
 	python manage.py load_model
 
-seed:
-	python manage.py seed_ihsg
+fetch:
+	python manage.py fetch_ihsg
+
+train:
+	python manage.py train_model
+
+predict:
+	python manage.py predict --periods 90
+
+retrain: fetch train predict
