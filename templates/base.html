@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}IHSG Predictor{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/output.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <nav class="sticky top-0 z-50 bg-primary-800/80 backdrop-blur-md border-b border-slate-700/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+
+                <div class="flex items-center space-x-8">
+                    <a href="/" class="flex items-center space-x-2">
+                        <span class="text-xl font-bold text-gold">IHSG</span>
+                        <span class="text-sm text-slate-400 hidden sm:inline">Predictor</span>
+                    </a>
+                    <div class="hidden md:flex items-center space-x-6">
+                        <a href="/" class="text-sm font-medium text-slate-300 hover:text-white transition">Dashboard</a>
+                        <a href="/historical/" class="text-sm font-medium text-slate-300 hover:text-white transition">Historical</a>
+                        <a href="/prediction/" class="text-sm font-medium text-slate-300 hover:text-white transition">Prediction</a>
+                        <a href="/about/" class="text-sm font-medium text-slate-300 hover:text-white transition">About</a>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <a href="/accounts/login/" class="text-sm text-slate-300 hover:text-white transition">Login</a>
+                    <a href="/accounts/register/" class="text-sm bg-gold text-primary-900 px-4 py-2 rounded-lg font-medium hover:bg-amber-400 transition">Register</a>
+                </div>
+
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="bg-primary-800/50 border-t border-slate-700/50 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+
+                <div class="text-sm text-slate-400">
+                    <span class="text-gold font-semibold">IHSG Predictor</span> &mdash; Powered by Prophet &amp; Django
+                </div>
+
+                <div class="text-xs text-slate-500 text-center max-w-md">
+                    <strong>Disclaimer:</strong> Semua prediksi bersifat indikatif dan bukan rekomendasi investasi.
+                    Selakukan lakukan analisis Anda sendiri sebelum mengambil keputusan investasi.
+                </div>
+
+                <div class="text-xs text-slate-500">
+                    &copy; {% now "Y" %} IHSG Predictor
+                </div>
+
+            </div>
+        </div>
+    </footer>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>
