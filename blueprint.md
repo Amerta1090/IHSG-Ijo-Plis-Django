@@ -9,11 +9,10 @@ Platform prediksi IHSG berbasis web yang memadukan analisis data historis dan ma
 ## 2. Arsitektur Sistem
 
 ```
-[Browser] --> [Django (HTTP/WS)] --> [PostgreSQL] 
-                |
+[Browser] --> [Django] --> [PostgreSQL] 
+                │
                 ├── Prophet Model (.joblib)
-                ├── Celery + Redis (background task)
-                └── Django REST Framework (API)
+                └── Celery + Redis (retrain task)
 ```
 
 ### Stack Utama
@@ -26,7 +25,7 @@ Platform prediksi IHSG berbasis web yang memadukan analisis data historis dan ma
 | Frontend     | Django Templates + HTMX + Tailwind CSS |
 | API          | Django REST Framework (opsional)       |
 | Chart        | Chart.js / ApexCharts                  |
-| Auth         | Django Allauth                         |
+
 
 ### Struktur Direktori
 ```
@@ -42,8 +41,7 @@ ihsg_project/
 │   ├── dashboard/           # halaman utama & visualisasi
 │   ├── prediction/          # logika loading model, prediksi
 │   ├── historical/          # data historis IHSG & upload CSV
-│   ├── users/               # profil, subscription
-│   └── api/                 # DRF endpoints
+│   └── training/            # retrain pipeline & model versioning
 ├── static/
 │   ├── css/
 │   ├── js/
@@ -65,10 +63,6 @@ ihsg_project/
 ## 3. Entity Relationship
 
 ```
-User (extended via Profile)
-  ├── id, email, password
-  └── Profile: role, company, avatar
-
 HistoricalData
   ├── id, date (ds), close (y)
   ├── source (manual/csv)
@@ -93,6 +87,7 @@ UploadedCSV
 3. **Model** --> `make_future_dataframe(periods=N)` --> `predict()`
 4. **Hasil** --> simpan ke PredictionResult
 5. **Dashboard** --> query DB --> render chart & tabel
+6. **Retrain Pipeline** (periodik) --> fetch Yahoo Finance --> preprocess --> train Prophet --> save `.joblib` baru
 
 ---
 
@@ -105,9 +100,7 @@ UploadedCSV
 | `/historical/`             | HistoricalView     | Tabel data historis + upload CSV     |
 | `/historical/upload/`      | UploadCSVView      | Form upload CSV                      |
 | `/about/`                  | AboutView          | Info model & metodologi              |
-| `/accounts/*`              | Allauth            | Login / register / profile           |
-| `/api/v1/predictions/`     | DRF ViewSet        | JSON endpoint prediksi               |
-| `/api/v1/historical/`      | DRF ViewSet        | JSON endpoint data historis          |
+| `/training/`               | TrainingView       | Trigger retrain & lihat riwayat model |
 
 ---
 
@@ -135,10 +128,10 @@ UploadedCSV
 
 ## 7. Constraints & Asumsi
 
-- Model Prophet statis (tidak retrain otomatis, perlu manual)
-- Data historis minimal 2 tahun untuk prediksi akurat
+- Model Prophet di-retrain secara berkala via pipeline offline batch learning (incremental)
+- Data historis minimal 2 tahun untuk prediksi akurat, di-fresh dari Yahoo Finance tiap retrain
 - Prediksi bersifat indikatif, bukan rekomendasi investasi
-- Deployment via Docker di VPS / cloud
+- Deployment target: Cloudflare Workers (Django app di-adjust untuk Workers runtime) | *saat ini masih Django standalone*
 
 ---
 
@@ -150,3 +143,4 @@ UploadedCSV
 | CSV upload gagal format       | Validasi ketat + preview sebelum insert   |
 | Data historis kosong          | Seed data dari Yahoo Finance via script   |
 | Prediksi tidak akurat         | Disclaimer jelas di setiap halaman        |
+| Migrasi ke Cloudflare Workers | Arsitektur Django dipisah per-modul sejak awal agar mudah diporting |

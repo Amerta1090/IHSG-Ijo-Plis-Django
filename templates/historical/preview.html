@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Preview - IHSG Predictor{% endblock %}
+{% block content %}
+
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-white">Preview Data</h1>
+    <p class="text-slate-400 text-sm mt-1">{{ total }} rows parsed. Review before saving.</p>
+</div>
+
+<div class="bg-primary-800 border border-slate-700/50 rounded-xl overflow-hidden mb-6">
+    <div class="overflow-x-auto max-h-96 overflow-y-auto">
+        <table class="w-full text-sm text-left">
+            <thead class="bg-primary-900/50 text-slate-400 text-xs uppercase tracking-wider sticky top-0">
+                <tr>
+                    <th class="px-4 py-3">#</th>
+                    <th class="px-4 py-3">Date (ds)</th>
+                    <th class="px-4 py-3 text-right">Close (y)</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-700/50">
+                {% for row in rows %}
+                <tr class="hover:bg-primary-900/30 transition">
+                    <td class="px-4 py-2 text-slate-500">{{ forloop.counter }}</td>
+                    <td class="px-4 py-2 font-mono text-white">{{ row.date|date:"Y-m-d" }}</td>
+                    <td class="px-4 py-2 text-right font-mono text-slate-200">{{ row.close|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="px-4 py-3 border-t border-slate-700/50 text-xs text-slate-500">
+        Showing all {{ total }} rows
+    </div>
+</div>
+
+<div class="flex items-center gap-3">
+    <form method="post" action="{% url 'historical:confirm_upload' %}">
+        {% csrf_token %}
+        <button type="submit"
+                class="bg-gold text-primary-900 px-6 py-2.5 rounded-lg font-medium hover:bg-amber-400 transition text-sm">
+            Confirm & Save
+        </button>
+    </form>
+    <form method="post" action="{% url 'historical:cancel_upload' %}">
+        {% csrf_token %}
+        <button type="submit"
+                class="bg-slate-700 text-slate-300 px-6 py-2.5 rounded-lg font-medium hover:bg-slate-600 transition text-sm">
+            Cancel
+        </button>
+    </form>
+</div>
+
+{% endblock %}

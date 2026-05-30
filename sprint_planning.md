@@ -115,30 +115,31 @@
 
 ---
 
-## Sprint 5: User Auth, Profile & API
+## Sprint 5: Incremental Learning (Offline Batch Learning)
 
-**Goal**: User bisa login/register, punya profile, dan API publik tersedia.
+**Goal**: Pipeline retraining model Prophet secara berkala dengan data IHSG real-time dari Yahoo Finance.
 
 ### Task List
 
 | # | Task | Estimasi | Ketergantungan |
 |---|------|----------|----------------|
-| 5.1 | Install & configure django-allauth | 2h | 1.1 |
-| 5.2 | Custom User Model + Profile (role, company) | 3h | 5.1 |
-| 5.3 | Halaman login / register (dark theme) | 3h | 5.1, 4.2 |
-| 5.4 | Halaman profile (edit data, avatar) | 2h | 5.2 |
-| 5.5 | DRF setup + API endpoint: `/api/v1/predictions/` | 3h | 3.4 |
-| 5.6 | API endpoint: `/api/v1/historical/` (filter date range) | 2h | 2.1 |
-| 5.7 | API pagination & throttling | 1h | 5.5 |
-| 5.8 | API docs via drf-spectacular (Swagger) | 2h | 5.5 |
-| 5.9 | Halaman About: info model, metodologi, disclaimer | 2h | - |
-| 5.10 | Disclaimer investasi di footer & setiap halaman prediksi | 1h | 4.2 |
+| 5.1 | Script fetch IHSG via yfinance (`^JKSE`, 2010–sekarang) | 2h | - |
+| 5.2 | Preprocessing: flatten multi-level columns, rename `Date → ds`, `Close → y` | 1h | 5.1 |
+| 5.3 | Init & train Prophet model (linear growth, multiplicative seasonality, yearly+weekly) | 3h | 5.2 |
+| 5.4 | Add Indonesian holidays (built-in `country_name='ID'` + custom holidays) | 1h | 5.3 |
+| 5.5 | Generate forecast 365 hari ke depan | 1h | 5.4 |
+| 5.6 | Plot forecast & decompose components (trend, yearly, weekly) | 2h | 5.5 |
+| 5.7 | Save trained model ke `.joblib` dengan versioning (timestamp) | 1h | 5.6 |
+| 5.8 | Automation script full pipeline (bash/Makefile: fetch → train → save) | 3h | 5.1–5.7 |
+| 5.9 | Management command `retrain_model` untuk trigger dari Django | 2h | 5.8 |
+| 5.10 | Schedule periodic retraining (cron / Celery beat monthly) | 2h | 5.9 |
+| 5.11 | Unit test: preprocessing, training pipeline, model serialization | 3h | 5.2–5.7 |
 
 **Definition of Done**:
-- User bisa register, login, logout, edit profile
-- API `/api/v1/predictions/` mengembalikan JSON predictions
-- Swagger UI bisa diakses di `/api/docs/`
-- Disclaimer tampil di semua halaman yang menampilkan prediksi
+- `python manage.py retrain_model` menghasilkan model `.joblib` baru
+- Pipeline end-to-end: fetch Yahoo Finance → preprocess → train → save berjalan otomatis
+- Model versi sebelumnya tidak hilang (versioning berbasis timestamp)
+- Forecast plot tersimpan sebagai artefak referensi
 
 ---
 
@@ -161,14 +162,15 @@
 | 6.9 | Performance: indexed query, N+1 fix, Redis cache | 3h | 3.5, 4.1 |
 | 6.10 | Load test dengan locust (simulasi 100 user) | 3h | 4.1, 5.5 |
 | 6.11 | Error pages: 404, 500, 403 custom (dark theme) | 2h | 1.5 |
-| 6.12 | Final integration test & manual QA | 4h | all |
+| 6.12 | Persiapan porting ke Cloudflare Workers (pisah handler, modular config) | 3h | 1.3 |
+| 6.13 | Final integration test & manual QA | 4h | all |
 
 **Definition of Done**:
-- `docker-compose up` jalan di VPS dengan domain
-- HTTPS aktif (Let's Encrypt via certbot)
+- Aplikasi berjalan stabil di environment production (Django standalone)
 - Sentry mencatat error di production
 - Semua endpoint merespon dalam < 500ms (p95)
 - Backup database berjalan otomatis tiap hari
+- Kode siap di-porting ke Cloudflare Workers (pisah config per-modul)
 
 ---
 
@@ -196,6 +198,6 @@
 | S2 | 19h | Data layer |
 | S3 | 18h | Prediction engine |
 | S4 | 26h | Dashboard & visualisasi |
-| S5 | 21h | Auth, API, tentang |
-| S6 | 24h | Deployment & polish |
-| **Total** | **125.5h** | ~12 minggu (1 dev full-time) |
+| S5 | 21h | Incremental learning |
+| S6 | 27h | Deployment & polish |
+| **Total** | **128.5h** | ~12 minggu (1 dev full-time) |

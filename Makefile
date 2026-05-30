@@ -1,4 +1,4 @@
-.PHONY: dev migrate shell test lint format
+.PHONY: dev migrate shell test lint format load-model seed
 
 dev:
 	python manage.py runserver
@@ -20,3 +20,6 @@ format:
 
 load-model:
 	python manage.py load_model
+
+seed:
+	python manage.py seed_ihsg
