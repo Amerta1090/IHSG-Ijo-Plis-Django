@@ -1,6 +1,6 @@
-# Sprint Planning — IHSG Predictor
+# Sprint Planning — IHSG & USD/IDR Predictor
 
-**Total**: 5 sprint x 1 minggu = 5 minggu
+**Total**: 9 sprint x 1 minggu = 9 minggu
 **Tim**: 1 developer
 
 ---
@@ -121,6 +121,66 @@
 
 ---
 
+## Sprint 6: USD/IDR Foundation
+
+**Goal**: Model USD/IDR siap di-load, services multi-market, data models + migration, pipeline prediksi via CLI.
+
+| #   | Task                                                                 | Estimasi |
+| --- | -------------------------------------------------------------------- | -------- |
+| 6.1 | Copy `usdidr_prophet_model.joblib` ke `media/models/`               | 0.5h     |
+| 6.2 | Refactor `PredictionService` — multi-market support (IHSG + USD/IDR) | 3h       |
+| 6.3 | Model `UsdIdrHistoricalData` + `UsdIdrPredictionResult` + migrasi   | 2h       |
+| 6.4 | Management command `predict_usdidr` — load model → predict 90d → simpan | 2h     |
+
+**Definition of Done**:
+- Model USD/IDR sukses di-load via `PredictionService(market='usdidr')`
+- `UsdIdrHistoricalData` + `UsdIdrPredictionResult` tercatat di DB
+- `python manage.py predict_usdidr` menghasilkan prediksi 90 hari
+
+---
+
+## Sprint 7: USD/IDR Dashboard
+
+**Goal**: Parameterized dashboard + chart refactor, navigasi dual-market, hero metrics, confidence score, sentiment badge.
+
+| #   | Task                                                                 | Estimasi |
+| --- | -------------------------------------------------------------------- | -------- |
+| 7.1 | Refactor `DashboardView` + urls — parameterized by market kwarg      | 2h       |
+| 7.2 | Refactor `index.html` → `dashboard.html` — semua hardcode IHSG jadi `{{ market.* }}` | 3h |
+| 7.3 | Refactor `chart.js` — market-aware config (warna, label, endpoint)   | 3h       |
+| 7.4 | Navbar toggle/selector — pindah antara IHSG ↔ USD/IDR               | 1h       |
+| 7.5 | API endpoint `/api/usdidr/metrics.json`                              | 1h       |
+| 7.6 | Hero Metrics USD/IDR — kurs now, change %, week change, prediksi 30d | 1h       |
+
+**Definition of Done**:
+- Satu `dashboard.html` melayani kedua market via context variable
+- Chart.js menampilkan chart sesuai market yang aktif
+- Navbar toggle berfungsi, hero metrics muncul dengan data USD/IDR
+
+---
+
+## Sprint 8: USD/IDR Premium + About
+
+**Goal**: Semua indikator premium IHSG di-port ke USD/IDR, retrain pipeline, about page dual-market.
+
+| #   | Task                                                                 | Estimasi |
+| --- | -------------------------------------------------------------------- | -------- |
+| 8.1 | Port Confidence Score circular gauge — reusable untuk USD/IDR        | 1h       |
+| 8.2 | Port Sentiment Badge — market-aware (trend MA 30d)                   | 0.5h     |
+| 8.3 | Port SMA 20/50 overlay + Decomposition Chart ke USD/IDR              | 2h       |
+| 8.4 | Port Volatility Indicator card ke USD/IDR                            | 0.5h     |
+| 8.5 | Port Export Chart PNG — market-aware filename                        | 0.5h     |
+| 8.6 | Retrain pipeline USD/IDR — `make retrain-usdidr` + Celery Beat       | 2h       |
+| 8.7 | Update About page — model stats untuk kedua market (IHSG + USD/IDR)  | 1h       |
+| 8.8 | E2E test — USD/IDR prediction + dashboard render                     | 0.5h     |
+
+**Definition of Done**:
+- Semua indikator (confidence, sentiment, SMA, decomposition, volatility) berfungsi di `/usdidr/`
+- `make retrain-usdidr` end-to-end
+- Halaman `/about` menampilkan statistik kedua model
+
+---
+
 ## Backlog
 
 | #   | Item                               | Prioritas | Notes                               |
@@ -140,4 +200,7 @@
 | S3     | 23h  | Dashboard inti                    |
 | S4     | 13h  | Indikator & komponen premium      |
 | S5     | 16h  | About, polish, deploy             |
-| **Total** | **84.5h** | ~5 minggu (1 dev)          |
+| S6     | 7.5h  | USD/IDR Foundation               |
+| S7     | 11h  | USD/IDR Dashboard                 |
+| S8     | 8h   | USD/IDR Premium + About          |
+| **Total** | **111h** | ~9 minggu (1 dev)          |

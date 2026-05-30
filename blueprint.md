@@ -2,9 +2,11 @@
 
 ## 1. Visi & Tujuan
 
-Satu halaman web prediksi IHSG yang modern, cepat, dan _eye-catching_.
-User datang, lihat grafik prediksi + indikator teknikal, dapat wawasan — selesai.
+Web prediksi IHSG + USD/IDR yang modern, cepat, dan _eye-catching_.
+User datang, lihat grafik prediksi + indikator teknikal untuk market pilihan — selesai.
 Prediksi tetap akurat berkat retrain model otomatis dari data Yahoo Finance.
+
+**Dual-market**: Dashboard parameterized — satu `dashboard.html` + satu `chart.js` melayani IHSG maupun USD/IDR, di-switch via navbar toggle.
 
 ---
 
@@ -13,7 +15,8 @@ Prediksi tetap akurat berkat retrain model otomatis dari data Yahoo Finance.
 ```
 [Browser] --> [Django] --> [PostgreSQL]
                 │
-                ├── Prophet Model (.joblib)
+                ├── Prophet Model IHSG (.joblib)
+                ├── Prophet Model USD/IDR (.joblib)
                 └── Celery + Redis (retrain scheduler)
 ```
 
@@ -24,7 +27,7 @@ Prediksi tetap akurat berkat retrain model otomatis dari data Yahoo Finance.
 | Backend      | Django 5.x                      |
 | DB           | PostgreSQL                      |
 | Cache/Queue  | Redis + Celery (scheduled retrain) |
-| ML Model     | Prophet (joblib)                |
+| ML Model     | Prophet (joblib) — IHSG + USD/IDR |
 | Frontend     | Django Templates + Tailwind CSS |
 | Chart        | Chart.js (line + area + bar)    |
 | Deploy       | Docker + Gunicorn               |
@@ -38,9 +41,13 @@ ihsg_project/
 │   └── predictor/          # satu app: semua logic di sini
 │       ├── models.py
 │       ├── views.py
-│       ├── services.py     # PredictionService, TrainingService
+│       ├── services.py     # PredictionService (IHSG + USD/IDR)
 │       ├── fetch_ihsg.py   # Yahoo Finance scraper
-│       ├── train.py        # Prophet training pipeline
+│       ├── train.py        # Prophet training pipeline IHSG
+│       ├── usdidr/         # modul khusus USD/IDR
+│       │   ├── services.py
+│       │   ├── fetch.py
+│       │   └── train.py
 │       └── management/     # management commands
 ├── static/
 │   ├── css/main.css
@@ -52,7 +59,7 @@ ihsg_project/
 │   ├── base.html
 │   ├── index.html
 │   └── about.html
-├── media/models/           # .joblib dengan versioning timestamp
+├── media/models/           # .joblib dengan versioning timestamp (ihsg + usdidr)
 ├── manage.py
 ├── docker-compose.yml      # Django + PostgreSQL + Redis + Celery
 ├── Dockerfile
@@ -82,6 +89,19 @@ ModelVersion
   ├── data_end_date (DateField)
   ├── metrics (JSONField)           # {'mae': ..., 'rmse': ...}
   └── is_active (BooleanField)
+
+# USD/IDR
+UsdIdrHistoricalData
+  ├── date (DateField, unique)
+  └── close (FloatField)
+
+UsdIdrPredictionResult
+  ├── date (DateField)
+  ├── yhat (FloatField)
+  ├── yhat_lower (FloatField)
+  ├── yhat_upper (FloatField)
+  ├── model_version (CharField)    # timestamp-based
+  └── unique: (date, model_version)
 ```
 
 ---
@@ -146,6 +166,8 @@ User buka `/` → DashboardView query `HistoricalData` (historis) + `PredictionR
 | **Confidence Score**    | Circular gauge: seberapa yakin model berdasarkan uncertainty width |
 | **Prediksi vs Aktual**  | Tabel: prediksi sebelumnya vs realisasi + akurasi % *(coming soon — butuh akumulasi data)* |
 | **Export PNG**          | Tombol download chart sebagai PNG                       |
+| **USD/IDR Dashboard**  | Dashboard terpisah untuk prediksi kurs USD/IDR           |
+| **Navbar Selector**     | Toggle navigasi antara dashboard IHSG ↔ USD/IDR         |
 | **Refresh Manual**      | Tombol "Refresh Data" + last updated badge (IHSG tutup 1x/hari, tdk perlu auto-refresh) |
 | **Component Decomposition** | Trend, weekly, yearly — Prophet decompose chart    |
 | **Sentiment Badge**     | Bullish / Bearish / Neutral berdasar slope MA 30d       |
@@ -156,7 +178,7 @@ User buka `/` → DashboardView query `HistoricalData` (historis) + `PredictionR
 | Fitur                  | Keterangan                                  |
 | ---------------------- | ------------------------------------------- |
 | Metodologi             | Penjelasan cara kerja Prophet + disclaimer  |
-| Model Stats            | MAE, RMSE, data range, last training        |
+| Model Stats            | MAE, RMSE, data range, last training (IHSG + USD/IDR) |
 | Accuracy Tracker       | Grafik akurasi prediksi antar versi model   |
 | Riwayat Model          | Tabel versi model + tanggal train + metrik  |
 
@@ -222,10 +244,12 @@ User buka `/` → DashboardView query `HistoricalData` (historis) + `PredictionR
 | URL      | View           | Deskripsi                                  |
 | -------- | -------------- | ------------------------------------------ |
 | `/`      | DashboardView  | Grafik IHSG + prediksi + indikator + metrik |
+| `/usdidr/` | UsdIdrDashboardView | Grafik USD/IDR + prediksi + metrik kurs |
 | `/about` | AboutView      | Info model, metodologi, accuracy tracker   |
-| `/api/metrics.json` | MetricsAPI | JSON endpoint untuk auto-refresh chart    |
+| `/api/metrics.json` | MetricsAPI | JSON endpoint IHSG untuk auto-refresh     |
+| `/api/usdidr/metrics.json` | UsdIdrMetricsAPI | JSON endpoint USD/IDR untuk auto-refresh |
 
-Hanya 2 halaman + 1 endpoint API ringan. Semua interaksi di satu halaman utama.
+Hanya 3 halaman + 2 endpoint API ringan. Semua interaksi di halaman dashboard masing-masing.
 
 ---
 
@@ -270,3 +294,62 @@ Setiap retrain menghasilkan model baru. Model lama tetap disimpan (rollback poss
 | Redis/Celery down            | Retrain bisa di-trigger manual via CLI   |
 | User misinterpretasi prediksi| Disclaimer besar + metode jelas di about |
 | Model degradation            | Accuracy tracker detects drift → notifikasi |
+
+---
+
+## 11. USD/IDR Predictor
+
+### 11.1 Perbedaan dari IHSG
+
+| Aspek               | IHSG                              | USD/IDR                            |
+| ------------------- | --------------------------------- | ---------------------------------- |
+| Simbol              | `^JKSE` (Yahoo Finance)           | `USDIDR=X` (Yahoo Finance)         |
+| Sumber data         | Yahoo Finance                     | Yahoo Finance / Bank Indonesia     |
+| Target prediksi     | Indeks saham (poin)               | Nilai tukar (Rp/USD)               |
+| Seasonality         | ID holidays + yearly/weekly       | Yearly + weekly + monthly          |
+| Retrain frekuensi   | Mingguan                          | Mingguan (independen)              |
+
+### 11.2 Model yang Telah Dilatih
+
+File `usdidr_prophet_model.joblib` sudah tersedia dan siap digunakan. Model ini sudah di-pre-train dan cukup di-load via `joblib` — tidak perlu training ulang untuk penggunaan awal.
+
+### 11.3 Fitur Parity — USD/IDR vs IHSG
+
+USD/IDR memiliki fitur yang **sama persis** dengan IHSG. Dashboard menggunakan `dashboard.html` yang sama secara parameterized — dibedakan oleh context variable `market`.
+
+| Fitur                    | IHSG | USD/IDR |
+| ------------------------ | ---- | ------- |
+| Hybrid Chart + Range     | ✅   | ✅      |
+| Multi Timeframe 7/30/90d | ✅   | ✅      |
+| Hero Metrics             | ✅   | ✅      |
+| SMA 20/50 Overlay        | ✅   | ✅      |
+| Confidence Score Gauge   | ✅   | ✅      |
+| Sentiment Badge          | ✅   | ✅      |
+| Decomposition Chart      | ✅   | ✅      |
+| Volatility Indicator     | ✅   | ✅      |
+| Export PNG               | ✅   | ✅      |
+| Refresh Manual           | ✅   | ✅      |
+| Prediction vs Actual     | ✅   | ✅      |
+| Navbar Toggle            | —    | ✅      |
+
+### 11.4 Arsitektur Dashboard USD/IDR
+
+```
+/usdidr/
+  ├── Hybrid chart (historis kurs + prediksi)
+  ├── Hero metrics:
+  │   ├── Kurs Now (Rp/USD)
+  │   ├── Change (% hari ini)
+  │   └── Prediksi 30d
+  └── Confidence score + sentiment badge
+```
+
+### 11.5 Pipeline Data
+
+Sama seperti IHSG, pipeline USD/IDR berjalan independen:
+1. **Fetch** — ambil data historis `USDIDR=X` dari Yahoo Finance
+2. **Predict** — load `usdidr_prophet_model.joblib` → forecast 90 hari
+3. **Simpan** — hasil prediksi ke `UsdIdrPredictionResult`
+4. **Sajikan** — via `/usdidr/` dashboard
+
+Retrain dapat dijalankan via `make retrain-usdidr` (manual) atau dijadwalkan via Celery Beat terpisah.
