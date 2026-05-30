@@ -17,9 +17,14 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "django_celery_beat",
     "apps.predictor",
 ]
+
+try:
+    import django_celery_beat  # noqa: F401
+    INSTALLED_APPS += ["django_celery_beat"]
+except ImportError:
+    pass
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
