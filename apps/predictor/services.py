@@ -10,31 +10,41 @@ from prophet import Prophet
 logger = logging.getLogger(__name__)
 
 
+MARKET_MODELS: dict[str, str] = {
+    "ihsg": "ihsg_prophet_model.joblib",
+    "usdidr": "usdidr_prophet_model.joblib",
+}
+
+
 class PredictionService:
-    _model: Prophet | None = None
+    _models: dict[str, Prophet | None] = {"ihsg": None, "usdidr": None}
 
     @classmethod
-    def _get_model_path(cls) -> Path:
-        return settings.MEDIA_ROOT / "models" / "ihsg_prophet_model.joblib"
+    def _get_model_path(cls, market: str = "ihsg") -> Path:
+        filename = MARKET_MODELS.get(market)
+        if not filename:
+            supported = list(MARKET_MODELS.keys())
+            raise ValueError(f"Unknown market: {market}. Supported: {supported}")
+        return settings.MEDIA_ROOT / "models" / filename
 
     @classmethod
-    def load_model(cls) -> Prophet:
-        if cls._model is not None:
-            return cls._model
-        model_path = cls._get_model_path()
+    def load_model(cls, market: str = "ihsg") -> Prophet:
+        if cls._models.get(market) is not None:
+            return cls._models[market]
+        model_path = cls._get_model_path(market)
         if not model_path.exists():
             raise FileNotFoundError(
-                f"Model file not found at {model_path}. "
+                f"Model file not found at {model_path} for market '{market}'. "
                 "Ensure the model has been placed in media/models/"
             )
-        logger.info("Loading Prophet model from %s", model_path)
-        cls._model = joblib.load(model_path)
-        logger.info("Model loaded successfully")
-        return cls._model
+        logger.info("Loading Prophet model for '%s' from %s", market, model_path)
+        cls._models[market] = joblib.load(model_path)
+        logger.info("Model for '%s' loaded successfully", market)
+        return cls._models[market]
 
     @classmethod
-    def predict(cls, periods: int = 30) -> list[dict]:
-        model = cls.load_model()
+    def predict(cls, periods: int = 30, market: str = "ihsg") -> list[dict]:
+        model = cls.load_model(market=market)
         future = model.make_future_dataframe(periods=periods)
         forecast = model.predict(future)
         result = forecast[["ds", "yhat", "yhat_lower", "yhat_upper"]].tail(periods)

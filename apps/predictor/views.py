@@ -26,26 +26,24 @@ def _compute_volatility(historical_data, window=20):
         return None
     closes = [d["close"] for d in historical_data[-window - 1 :]]
     returns = [
-        (closes[i] - closes[i - 1]) / closes[i - 1] * 100
-        for i in range(1, len(closes))
+        (closes[i] - closes[i - 1]) / closes[i - 1] * 100 for i in range(1, len(closes))
     ]
     mean = sum(returns) / len(returns)
     variance = sum((r - mean) ** 2 for r in returns) / len(returns)
-    std = variance ** 0.5
+    std = variance**0.5
     return round(std, 2)
 
 
 def _get_dashboard_data(request=None):
     historical_qs = HistoricalData.objects.all().order_by("date")
-    historical_data = [
-        {"date": str(h.date), "close": h.close} for h in historical_qs
-    ]
+    historical_data = [{"date": str(h.date), "close": h.close} for h in historical_qs]
 
     active_model = ModelVersion.objects.filter(is_active=True).first()
     pred_version = None
-    if active_model and PredictionResult.objects.filter(
-        model_version=active_model.version
-    ).exists():
+    if (
+        active_model
+        and PredictionResult.objects.filter(model_version=active_model.version).exists()
+    ):
         pred_version = active_model.version
     else:
         latest = (
@@ -58,9 +56,9 @@ def _get_dashboard_data(request=None):
 
     prediction_data = []
     if pred_version:
-        preds = PredictionResult.objects.filter(
-            model_version=pred_version
-        ).order_by("date")
+        preds = PredictionResult.objects.filter(model_version=pred_version).order_by(
+            "date"
+        )
         last_hist_date = (
             historical_qs.last().date if historical_qs.exists() else date.min
         )
@@ -86,9 +84,7 @@ def _get_dashboard_data(request=None):
         change_value = round(ihsg_now.close - ihsg_prev.close, 2)
         change_pct = round((change_value / ihsg_prev.close) * 100, 2)
 
-    week_ago = (
-        historical_qs.order_by("-date")[4] if historical_qs.count() > 5 else None
-    )
+    week_ago = historical_qs.order_by("-date")[4] if historical_qs.count() > 5 else None
     week_change_pct = 0.0
     week_change_value = 0.0
     if ihsg_now and week_ago and week_ago.close:
@@ -133,9 +129,9 @@ def _get_dashboard_data(request=None):
     pred_vs_actual = []
     if pred_version:
         actual_map = {h.date: h.close for h in historical_qs}
-        preds = PredictionResult.objects.filter(
-            model_version=pred_version
-        ).order_by("date")
+        preds = PredictionResult.objects.filter(model_version=pred_version).order_by(
+            "date"
+        )
         for p in preds:
             actual = actual_map.get(p.date)
             if actual is not None:
@@ -144,9 +140,7 @@ def _get_dashboard_data(request=None):
                         "date": str(p.date),
                         "predicted": round(p.yhat, 2),
                         "actual": actual,
-                        "error_pct": round(
-                            abs(p.yhat - actual) / actual * 100, 2
-                        ),
+                        "error_pct": round(abs(p.yhat - actual) / actual * 100, 2),
                     }
                 )
 

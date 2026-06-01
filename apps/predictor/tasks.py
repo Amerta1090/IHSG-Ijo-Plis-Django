@@ -70,7 +70,7 @@ def retrain_pipeline(self):
 
     # Step 4: Predict
     logger.info("Generating predictions...")
-    PredictionService._model = model
+    PredictionService._models["ihsg"] = model
     try:
         result = PredictionService.predict(periods=90)
     except Exception as e:
