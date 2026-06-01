@@ -5,7 +5,13 @@ import pandas as pd
 from celery import shared_task
 from django.db import transaction
 
-from apps.predictor.models import HistoricalData, ModelVersion, PredictionResult
+from apps.predictor.models import (
+    HistoricalData,
+    ModelVersion,
+    PredictionResult,
+    UsdIdrHistoricalData,
+    UsdIdrPredictionResult,
+)
 from apps.predictor.services import PredictionService, TrainingService
 
 logger = logging.getLogger(__name__)
@@ -90,3 +96,72 @@ def retrain_pipeline(self):
             )
 
     logger.info(f"Retrain pipeline complete. v{version}")
+
+
+@shared_task(bind=True, max_retries=2)
+def retrain_usdidr_pipeline(self):
+    """Full USD/IDR retrain pipeline: fetch → train → predict."""
+    logger.info("Starting USD/IDR retrain pipeline...")
+
+    # Step 1: Fetch
+    logger.info("Fetching USD/IDR data...")
+    try:
+        df = TrainingService.fetch_usdidr(years=10)
+    except Exception as e:
+        logger.error(f"USD/IDR fetch failed: {e}")
+        raise self.retry(exc=e, countdown=300)
+
+    # Step 2: Store in DB
+    inserted = 0
+    updated = 0
+    for _, row in df.iterrows():
+        obj, created = UsdIdrHistoricalData.objects.update_or_create(
+            date=row["ds"].date(),
+            defaults={"close": round(float(row["y"]), 2)},
+        )
+        if created:
+            inserted += 1
+        else:
+            updated += 1
+    logger.info(f"USD/IDR DB updated: {inserted} new, {updated} existing")
+
+    # Step 3: Train Prophet
+    qs = UsdIdrHistoricalData.objects.all().order_by("date")
+    hist_df = pd.DataFrame(list(qs.values("date", "close"))).rename(
+        columns={"date": "ds", "close": "y"}
+    )
+
+    logger.info(f"Training USD/IDR Prophet on {len(hist_df)} rows...")
+    try:
+        model = TrainingService.train_prophet(hist_df)
+    except Exception as e:
+        logger.error(f"USD/IDR training failed: {e}")
+        raise self.retry(exc=e, countdown=300)
+
+    version = datetime.now().strftime("%Y%m%d_%H%M%S")
+    TrainingService.save_model(model, version, market="usdidr")
+    metrics = TrainingService.evaluate(model, hist_df)
+    logger.info(f"USD/IDR Model v{version} metrics: {metrics}")
+
+    # Step 4: Predict
+    logger.info("Generating USD/IDR predictions...")
+    PredictionService._models["usdidr"] = model
+    try:
+        result = PredictionService.predict(periods=90, market="usdidr")
+    except Exception as e:
+        logger.error(f"USD/IDR prediction failed: {e}")
+        return
+
+    with transaction.atomic():
+        for row in result:
+            UsdIdrPredictionResult.objects.update_or_create(
+                date=row["ds"].date(),
+                model_version=version,
+                defaults={
+                    "yhat": round(float(row["yhat"]), 2),
+                    "yhat_lower": round(float(row["yhat_lower"]), 2),
+                    "yhat_upper": round(float(row["yhat_upper"]), 2),
+                },
+            )
+
+    logger.info(f"USD/IDR retrain pipeline complete. v{version}")

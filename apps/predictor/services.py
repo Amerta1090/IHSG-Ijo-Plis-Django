@@ -107,12 +107,13 @@ class TrainingService:
         return model
 
     @staticmethod
-    def save_model(model: Prophet, version: str) -> Path:
+    def save_model(model: Prophet, version: str, market: str = "ihsg") -> Path:
         models_dir = settings.MEDIA_ROOT / "models"
         models_dir.mkdir(parents=True, exist_ok=True)
-        path = models_dir / f"ihsg_v{version}.joblib"
+        prefix = MARKET_MODELS.get(market, "ihsg").replace("_prophet_model.joblib", "")
+        path = models_dir / f"{prefix}_v{version}.joblib"
         joblib.dump(model, path)
-        default_path = models_dir / "ihsg_prophet_model.joblib"
+        default_path = models_dir / MARKET_MODELS[market]
         joblib.dump(model, default_path)
         return path
 

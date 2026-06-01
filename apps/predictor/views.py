@@ -1,7 +1,7 @@
 import json
 from datetime import date, timedelta
 
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 
 from apps.predictor.models import (
@@ -282,10 +282,6 @@ def dashboard(request, market="ihsg"):
     return render(request, "dashboard.html", context)
 
 
-def index(request):
-    return dashboard(request, market="ihsg")
-
-
 def about(request):
     try:
         model_versions = list(ModelVersion.objects.all().order_by("-trained_at"))
@@ -318,12 +314,31 @@ def about(request):
                 "is_active": True,
             }
 
+        usdidr_historical_count = UsdIdrHistoricalData.objects.count()
+        usdidr_prediction_count = UsdIdrPredictionResult.objects.count()
+        usdidr_latest_version = (
+            UsdIdrPredictionResult.objects.values_list("model_version", flat=True)
+            .distinct()
+            .order_by("-model_version")
+            .first()
+        )
+        usdidr_model_loaded = False
+        try:
+            PredictionService.load_model(market="usdidr")
+            usdidr_model_loaded = True
+        except Exception:
+            pass
+
         context = {
             "model_stats": model_stats,
             "active_model": active_stats,
             "historical_count": historical_count,
             "model_count": len(model_versions),
             "model_stats_json": json.dumps(model_stats),
+            "usdidr_historical_count": usdidr_historical_count,
+            "usdidr_prediction_count": usdidr_prediction_count,
+            "usdidr_model_version": usdidr_latest_version or "usdidr_pretrained",
+            "usdidr_model_loaded": usdidr_model_loaded,
         }
     except Exception:
         context = {
@@ -332,6 +347,10 @@ def about(request):
             "historical_count": 0,
             "model_count": 0,
             "model_stats_json": "[]",
+            "usdidr_historical_count": 0,
+            "usdidr_prediction_count": 0,
+            "usdidr_model_version": None,
+            "usdidr_model_loaded": False,
         }
     return render(request, "about.html", context)
 
@@ -472,3 +491,7 @@ def usdidr_decomposition_api(request):
         return JsonResponse(result)
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
+
+
+def health(request):
+    return HttpResponse("ok", content_type="text/plain")
