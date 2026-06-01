@@ -76,6 +76,23 @@ class TrainingService:
         return df
 
     @staticmethod
+    def fetch_usdidr(years: int = 10) -> pd.DataFrame:
+        import yfinance as yf
+
+        end = timezone.now()
+        start = end.replace(year=end.year - years)
+        ticker = yf.Ticker("IDR=X")
+        df = ticker.history(start=start, end=end)
+        if df.empty:
+            raise ValueError("No data retrieved from Yahoo Finance for IDR=X")
+        df = df.reset_index()
+        date_col = "Date" if "Date" in df.columns else "Datetime"
+        df[date_col] = pd.to_datetime(df[date_col]).dt.tz_localize(None)
+        df = df.rename(columns={date_col: "ds", "Close": "y"})
+        df = df[["ds", "y"]].sort_values("ds").dropna()
+        return df
+
+    @staticmethod
     def train_prophet(df: pd.DataFrame) -> Prophet:
         model = Prophet(
             growth="linear",

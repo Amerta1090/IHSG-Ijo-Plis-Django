@@ -1,4 +1,21 @@
-function initComponents(historicalData, predictionData) {
+let marketConfig = {};
+let historicalData = null;
+let predictionData = null;
+
+function initComponents(histData, predData, mktConfig) {
+    historicalData = histData;
+    predictionData = predData;
+    marketConfig = mktConfig || {
+        name: 'ihsg',
+        apiEndpoint: '/api/metrics.json',
+        decompEndpoint: '/api/decomposition.json',
+        colors: {
+            historical: '#22c55e',
+            historicalFill: 'rgba(34, 197, 94, 0.12)',
+            prediction: '#f59e0b',
+            band: 'rgba(245, 158, 11, 0.1)',
+        },
+    };
     initConfidenceGauge();
     initExportButton();
     initRefreshButton();
@@ -34,7 +51,8 @@ function initExportButton() {
         if (!hybridChart) return;
 
         var link = document.createElement('a');
-        link.download = 'ihsg-chart-' + new Date().toISOString().slice(0, 10) + '.png';
+        var prefix = marketConfig ? marketConfig.name.toLowerCase() : 'ihsg';
+        link.download = prefix + '-chart-' + new Date().toISOString().slice(0, 10) + '.png';
         link.href = hybridChart.toBase64Image('image/png', 1);
         link.click();
     });
@@ -51,7 +69,8 @@ function initRefreshButton() {
         if (svg) svg.classList.add('animate-spin');
         if (text) text.textContent = 'Refreshing...';
 
-        fetch('/api/metrics.json')
+        var endpoint = marketConfig ? marketConfig.apiEndpoint : '/api/metrics.json';
+        fetch(endpoint)
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 window.location.reload();
@@ -92,7 +111,8 @@ function initDecompositionCharts() {
     var charts = document.getElementById('decomposition-charts');
     if (skeleton) skeleton.classList.remove('hidden');
 
-    fetch('/api/decomposition.json')
+    var endpoint = marketConfig ? marketConfig.decompEndpoint : '/api/decomposition.json';
+    fetch(endpoint)
         .then(function (r) { return r.json(); })
         .then(function (data) {
             if (skeleton) skeleton.classList.add('hidden');

@@ -41,19 +41,33 @@ function mapToLabel(data, label) {
     return null;
 }
 
-function buildDatasets(hist, pred, sma20, sma50) {
+function buildDatasets(hist, pred, sma20, sma50, marketConfig) {
     var labels = mergeLabels(hist, pred, sma20, sma50);
     var datasets = [];
+    if (!marketConfig) {
+        marketConfig = {
+            histLabel: 'Historical',
+            apiEndpoint: '/api/metrics.json',
+            decompEndpoint: '/api/decomposition.json',
+            colors: {
+                historical: '#22c55e',
+                historicalFill: 'rgba(34, 197, 94, 0.12)',
+                prediction: '#f59e0b',
+                band: 'rgba(245, 158, 11, 0.1)',
+            },
+        };
+    }
+    var colors = marketConfig.colors;
 
     if (hist.length > 0) {
         datasets.push({
-            label: 'IHSG Historical',
+            label: marketConfig.histLabel,
             data: labels.map(function (l) {
                 var d = mapToLabel(hist, l);
                 return d ? d.close : null;
             }),
-            borderColor: '#22c55e',
-            backgroundColor: 'rgba(34, 197, 94, 0.12)',
+            borderColor: colors.historical,
+            backgroundColor: colors.historicalFill,
             fill: true,
             pointRadius: 0,
             borderWidth: 2,
@@ -78,19 +92,19 @@ function buildDatasets(hist, pred, sma20, sma50) {
         });
 
         datasets.push({
-            label: 'Upper Bound',
-            data: upperValues,
+            label: 'Lower Bound',
+            data: lowerValues,
             borderColor: 'transparent',
-            backgroundColor: 'transparent',
+            backgroundColor: colors.band,
             pointRadius: 0,
             fill: '+1',
             order: 0,
         });
         datasets.push({
-            label: 'Lower Bound',
-            data: lowerValues,
+            label: 'Upper Bound',
+            data: upperValues,
             borderColor: 'transparent',
-            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+            backgroundColor: 'transparent',
             pointRadius: 0,
             fill: false,
             order: 0,
@@ -98,7 +112,7 @@ function buildDatasets(hist, pred, sma20, sma50) {
         datasets.push({
             label: 'Prediction',
             data: predValues,
-            borderColor: '#f59e0b',
+            borderColor: colors.prediction,
             backgroundColor: 'transparent',
             borderDash: [6, 4],
             borderWidth: 2,
@@ -146,7 +160,7 @@ function buildDatasets(hist, pred, sma20, sma50) {
     return { labels: labels, datasets: datasets };
 }
 
-function initChart(historicalData, predictionData, sma20Data, sma50Data) {
+function initChart(historicalData, predictionData, sma20Data, sma50Data, marketConfig) {
     var ctx = document.getElementById('hybridChart');
     if (!ctx) return;
 
@@ -161,44 +175,29 @@ function initChart(historicalData, predictionData, sma20Data, sma50Data) {
         var pred = getPredictionSubset(predictionData, activePeriod);
         var sma20 = getDateRange(sma20Data, activeRange);
         var sma50 = getDateRange(sma50Data, activeRange);
-        var result = buildDatasets(hist, pred, sma20, sma50);
+        var result = buildDatasets(hist, pred, sma20, sma50, marketConfig);
 
         if (!hybridChart) {
             hybridChart = new Chart(ctx, {
                 type: 'line',
-                data: {
-                    labels: result.labels,
-                    datasets: result.datasets,
-                },
+                data: { labels: result.labels, datasets: result.datasets },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    interaction: {
-                        intersect: false,
-                        mode: 'index',
-                    },
+                    interaction: { intersect: false, mode: 'index' },
                     plugins: {
                         legend: {
-                            display: true,
-                            position: 'top',
-                            align: 'end',
+                            display: true, position: 'top', align: 'end',
                             labels: {
-                                color: '#94a3b8',
-                                boxWidth: 16,
-                                padding: 16,
+                                color: '#94a3b8', boxWidth: 16, padding: 16,
                                 font: { family: 'JetBrains Mono, monospace', size: 11 },
-                                usePointStyle: true,
-                                pointStyle: 'line',
+                                usePointStyle: true, pointStyle: 'line',
                             },
                         },
                         tooltip: {
-                            backgroundColor: '#1a2338',
-                            titleColor: '#f1f5f9',
-                            bodyColor: '#94a3b8',
-                            borderColor: '#1e293b',
-                            borderWidth: 1,
-                            padding: 12,
-                            cornerRadius: 8,
+                            backgroundColor: '#1a2338', titleColor: '#f1f5f9',
+                            bodyColor: '#94a3b8', borderColor: '#1e293b',
+                            borderWidth: 1, padding: 12, cornerRadius: 8,
                             titleFont: { family: 'Inter, sans-serif', size: 13 },
                             bodyFont: { family: 'JetBrains Mono, monospace', size: 12 },
                             callbacks: {
@@ -215,17 +214,14 @@ function initChart(historicalData, predictionData, sma20Data, sma50Data) {
                         x: {
                             grid: { color: '#1e293b', drawBorder: false },
                             ticks: {
-                                color: '#64748b',
-                                font: { family: 'JetBrains Mono, monospace', size: 10 },
-                                maxTicksLimit: 12,
-                                autoSkip: true,
+                                color: '#64748b', font: { family: 'JetBrains Mono, monospace', size: 10 },
+                                maxTicksLimit: 12, autoSkip: true,
                             },
                         },
                         y: {
                             grid: { color: '#1e293b', drawBorder: false },
                             ticks: {
-                                color: '#64748b',
-                                font: { family: 'JetBrains Mono, monospace', size: 10 },
+                                color: '#64748b', font: { family: 'JetBrains Mono, monospace', size: 10 },
                                 callback: function (value) { return value.toLocaleString(); },
                             },
                         },
@@ -241,7 +237,6 @@ function initChart(historicalData, predictionData, sma20Data, sma50Data) {
 
     updateChart();
 
-    // Timeframe tabs
     document.querySelectorAll('.tab-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
             document.querySelectorAll('.tab-btn').forEach(function (b) {
@@ -250,26 +245,22 @@ function initChart(historicalData, predictionData, sma20Data, sma50Data) {
             });
             this.classList.add('tab-active');
             this.classList.remove('text-[#94a3b8]');
-
             activePeriod = parseInt(this.getAttribute('data-period'));
             updateChart();
         });
     });
 
-    // Range selector
     document.querySelectorAll('.range-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
             document.querySelectorAll('.range-btn').forEach(function (b) {
                 b.classList.remove('range-active');
             });
             this.classList.add('range-active');
-
             activeRange = this.getAttribute('data-range');
             updateChart();
         });
     });
 
-    // SMA toggles
     document.querySelectorAll('.sma-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
             var sma = this.getAttribute('data-sma');
