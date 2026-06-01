@@ -1,4 +1,6 @@
 let hybridChart = null;
+let sma20Visible = true;
+let sma50Visible = true;
 
 function getDateRange(data, range) {
     if (!data || data.length === 0) return [];
@@ -19,7 +21,7 @@ function getPredictionSubset(predictions, period) {
     return predictions.slice(0, period);
 }
 
-function mergeLabels(hist, pred) {
+function mergeLabels(hist, pred, sma20, sma50) {
     var seen = {};
     var result = [];
     function add(label) {
@@ -27,6 +29,8 @@ function mergeLabels(hist, pred) {
     }
     hist.forEach(function (d) { add(d.date); });
     pred.forEach(function (d) { add(d.date); });
+    sma20.forEach(function (d) { add(d.date); });
+    sma50.forEach(function (d) { add(d.date); });
     return result;
 }
 
@@ -37,8 +41,8 @@ function mapToLabel(data, label) {
     return null;
 }
 
-function buildDatasets(hist, pred) {
-    var labels = mergeLabels(hist, pred);
+function buildDatasets(hist, pred, sma20, sma50) {
+    var labels = mergeLabels(hist, pred, sma20, sma50);
     var datasets = [];
 
     if (hist.length > 0) {
@@ -55,7 +59,7 @@ function buildDatasets(hist, pred) {
             borderWidth: 2,
             tension: 0.1,
             spanGaps: false,
-            order: 2,
+            order: 4,
         });
     }
 
@@ -101,6 +105,40 @@ function buildDatasets(hist, pred) {
             pointRadius: 0,
             fill: false,
             tension: 0.1,
+            order: 3,
+        });
+    }
+
+    if (sma20.length > 0 && sma20Visible) {
+        datasets.push({
+            label: 'SMA 20',
+            data: labels.map(function (l) {
+                var d = mapToLabel(sma20, l);
+                return d ? d.value : null;
+            }),
+            borderColor: '#3b82f6',
+            backgroundColor: 'transparent',
+            borderWidth: 1.5,
+            borderDash: [3, 3],
+            pointRadius: 0,
+            tension: 0.3,
+            order: 2,
+        });
+    }
+
+    if (sma50.length > 0 && sma50Visible) {
+        datasets.push({
+            label: 'SMA 50',
+            data: labels.map(function (l) {
+                var d = mapToLabel(sma50, l);
+                return d ? d.value : null;
+            }),
+            borderColor: '#a855f7',
+            backgroundColor: 'transparent',
+            borderWidth: 1.5,
+            borderDash: [3, 3],
+            pointRadius: 0,
+            tension: 0.3,
             order: 1,
         });
     }
@@ -108,17 +146,22 @@ function buildDatasets(hist, pred) {
     return { labels: labels, datasets: datasets };
 }
 
-function initChart(historicalData, predictionData) {
+function initChart(historicalData, predictionData, sma20Data, sma50Data) {
     var ctx = document.getElementById('hybridChart');
     if (!ctx) return;
 
     var activeRange = '6M';
     var activePeriod = 30;
 
+    sma20Data = sma20Data || [];
+    sma50Data = sma50Data || [];
+
     function updateChart() {
         var hist = getDateRange(historicalData, activeRange);
         var pred = getPredictionSubset(predictionData, activePeriod);
-        var result = buildDatasets(hist, pred);
+        var sma20 = getDateRange(sma20Data, activeRange);
+        var sma50 = getDateRange(sma50Data, activeRange);
+        var result = buildDatasets(hist, pred, sma20, sma50);
 
         if (!hybridChart) {
             hybridChart = new Chart(ctx, {
@@ -222,6 +265,21 @@ function initChart(historicalData, predictionData) {
             this.classList.add('range-active');
 
             activeRange = this.getAttribute('data-range');
+            updateChart();
+        });
+    });
+
+    // SMA toggles
+    document.querySelectorAll('.sma-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var sma = this.getAttribute('data-sma');
+            if (sma === '20') {
+                sma20Visible = !sma20Visible;
+                this.classList.toggle('sma-active');
+            } else {
+                sma50Visible = !sma50Visible;
+                this.classList.toggle('sma-active');
+            }
             updateChart();
         });
     });

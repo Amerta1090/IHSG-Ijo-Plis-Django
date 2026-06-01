@@ -1,12 +1,41 @@
 import json
 from datetime import date
 
+from django.http import JsonResponse
 from django.shortcuts import render
 
 from apps.predictor.models import HistoricalData, ModelVersion, PredictionResult
+from apps.predictor.services import PredictionService
 
 
-def index(request):
+def _compute_sma(historical_data, window):
+    if len(historical_data) < window:
+        return []
+    values = [d["close"] for d in historical_data]
+    sma = []
+    for i in range(len(values)):
+        if i < window - 1:
+            continue
+        avg = sum(values[i - window + 1 : i + 1]) / window
+        sma.append({"date": historical_data[i]["date"], "value": round(avg, 2)})
+    return sma
+
+
+def _compute_volatility(historical_data, window=20):
+    if len(historical_data) < window + 1:
+        return None
+    closes = [d["close"] for d in historical_data[-window - 1 :]]
+    returns = [
+        (closes[i] - closes[i - 1]) / closes[i - 1] * 100
+        for i in range(1, len(closes))
+    ]
+    mean = sum(returns) / len(returns)
+    variance = sum((r - mean) ** 2 for r in returns) / len(returns)
+    std = variance ** 0.5
+    return round(std, 2)
+
+
+def _get_dashboard_data(request=None):
     historical_qs = HistoricalData.objects.all().order_by("date")
     historical_data = [
         {"date": str(h.date), "close": h.close} for h in historical_qs
@@ -97,7 +126,31 @@ def index(request):
         active_model.trained_at.strftime("%Y-%m-%d %H:%M:%S") if active_model else None
     )
 
-    context = {
+    sma_20 = _compute_sma(historical_data, 20)
+    sma_50 = _compute_sma(historical_data, 50)
+    volatility = _compute_volatility(historical_data, 20)
+
+    pred_vs_actual = []
+    if pred_version:
+        actual_map = {h.date: h.close for h in historical_qs}
+        preds = PredictionResult.objects.filter(
+            model_version=pred_version
+        ).order_by("date")
+        for p in preds:
+            actual = actual_map.get(p.date)
+            if actual is not None:
+                pred_vs_actual.append(
+                    {
+                        "date": str(p.date),
+                        "predicted": round(p.yhat, 2),
+                        "actual": actual,
+                        "error_pct": round(
+                            abs(p.yhat - actual) / actual * 100, 2
+                        ),
+                    }
+                )
+
+    return {
         "historical_json": json.dumps(historical_data),
         "predictions_json": json.dumps(prediction_data),
         "ihsg_now": ihsg_now.close if ihsg_now else None,
@@ -112,6 +165,79 @@ def index(request):
         "active_model_version": active_model.version if active_model else None,
         "historical_count": historical_qs.count(),
         "prediction_count": len(prediction_data),
+        "sma_20_json": json.dumps(sma_20),
+        "sma_50_json": json.dumps(sma_50),
+        "volatility": volatility,
+        "pred_vs_actual": pred_vs_actual,
+        "pred_vs_actual_json": json.dumps(pred_vs_actual),
     }
 
+
+def index(request):
+    context = _get_dashboard_data(request)
     return render(request, "index.html", context)
+
+
+def metrics_api(request):
+    data = _get_dashboard_data(request)
+    json_data = {
+        "historical": json.loads(data["historical_json"]),
+        "predictions": json.loads(data["predictions_json"]),
+        "ihsg_now": data["ihsg_now"],
+        "change_pct": data["change_pct"],
+        "change_value": data["change_value"],
+        "week_change_pct": data["week_change_pct"],
+        "week_change_value": data["week_change_value"],
+        "prediksi_30d": data["prediksi_30d"],
+        "confidence_score": data["confidence_score"],
+        "sentiment": data["sentiment"],
+        "last_updated": data["last_updated"],
+        "active_model_version": data["active_model_version"],
+        "sma_20": json.loads(data["sma_20_json"]),
+        "sma_50": json.loads(data["sma_50_json"]),
+        "volatility": data["volatility"],
+        "pred_vs_actual": json.loads(data["pred_vs_actual_json"]),
+    }
+    return JsonResponse(json_data)
+
+
+def decomposition_api(request):
+    try:
+        model = PredictionService.load_model()
+        historical = HistoricalData.objects.all().order_by("date")
+        start_date = historical.first().date if historical.exists() else None
+        end_date = historical.last().date if historical.exists() else None
+        if not start_date or not end_date:
+            return JsonResponse({"error": "No historical data"}, status=404)
+
+        future = model.make_future_dataframe(periods=0, include_history=True)
+        forecast = model.predict(future)
+        forecast["ds"] = forecast["ds"].dt.strftime("%Y-%m-%d")
+
+        result = {
+            "trend": forecast[["ds", "trend"]]
+            .rename(columns={"trend": "value"})
+            .to_dict(orient="records"),
+        }
+
+        if "weekly" in forecast.columns:
+            result["weekly"] = (
+                forecast[["ds", "weekly"]]
+                .rename(columns={"weekly": "value"})
+                .to_dict(orient="records")
+            )
+        else:
+            result["weekly"] = []
+
+        if "yearly" in forecast.columns:
+            result["yearly"] = (
+                forecast[["ds", "yearly"]]
+                .rename(columns={"yearly": "value"})
+                .to_dict(orient="records")
+            )
+        else:
+            result["yearly"] = []
+
+        return JsonResponse(result)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
