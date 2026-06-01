@@ -10,8 +10,8 @@ function initComponents(histData, predData, mktConfig) {
         apiEndpoint: '/api/metrics.json',
         decompEndpoint: '/api/decomposition.json',
         colors: {
-            historical: '#22c55e',
-            historicalFill: 'rgba(34, 197, 94, 0.12)',
+            historical: '#00ff88',
+            historicalFill: 'rgba(0, 255, 136, 0.12)',
             prediction: '#f59e0b',
             band: 'rgba(245, 158, 11, 0.1)',
         },
@@ -32,8 +32,8 @@ function initConfidenceGauge() {
     var circumference = 2 * Math.PI * 42;
     var offset = circumference - (score / 100) * circumference;
 
-    var color = '#ef4444';
-    if (score >= 70) color = '#22c55e';
+    var color = '#ff4444';
+    if (score >= 70) color = '#00ff88';
     else if (score >= 40) color = '#f59e0b';
 
     arc.style.stroke = color;
@@ -124,10 +124,10 @@ function initDecompositionCharts() {
                 plugins: {
                     legend: { display: false },
                     tooltip: {
-                        backgroundColor: '#1a2338',
+                        backgroundColor: '#1a1a1a',
                         titleColor: '#f1f5f9',
                         bodyColor: '#94a3b8',
-                        borderColor: '#1e293b',
+                        borderColor: '#2a2a2a',
                         borderWidth: 1,
                         padding: 8,
                         cornerRadius: 6,
@@ -136,11 +136,11 @@ function initDecompositionCharts() {
                 },
                 scales: {
                     x: {
-                        grid: { color: '#1e293b', drawBorder: false },
+                        grid: { color: '#2a2a2a', drawBorder: false },
                         ticks: { color: '#64748b', font: { size: 8 }, maxTicksLimit: 8, autoSkip: true },
                     },
                     y: {
-                        grid: { color: '#1e293b', drawBorder: false },
+                        grid: { color: '#2a2a2a', drawBorder: false },
                         ticks: { color: '#64748b', font: { size: 8 }, callback: function (v) { return v.toFixed(1); } },
                     },
                 },
@@ -162,7 +162,7 @@ function initDecompositionCharts() {
                             borderWidth: 1.5,
                             pointRadius: 0,
                             fill: true,
-                            tension: 0.3,
+                            tension: 0,
                         }],
                     },
                     options: commonOpts,
@@ -170,7 +170,7 @@ function initDecompositionCharts() {
             }
 
             buildDecompChart('trendChart', data.trend, '#3b82f6');
-            buildDecompChart('weeklyChart', data.weekly, '#22c55e');
+            buildDecompChart('weeklyChart', data.weekly, '#00ff88');
             buildDecompChart('yearlyChart', data.yearly, '#f59e0b');
         })
         .catch(function () {

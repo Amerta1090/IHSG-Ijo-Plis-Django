@@ -50,8 +50,8 @@ function buildDatasets(hist, pred, sma20, sma50, marketConfig) {
             apiEndpoint: '/api/metrics.json',
             decompEndpoint: '/api/decomposition.json',
             colors: {
-                historical: '#22c55e',
-                historicalFill: 'rgba(34, 197, 94, 0.12)',
+                historical: '#00ff88',
+                historicalFill: 'rgba(0, 255, 136, 0.12)',
                 prediction: '#f59e0b',
                 band: 'rgba(245, 158, 11, 0.1)',
             },
@@ -71,7 +71,7 @@ function buildDatasets(hist, pred, sma20, sma50, marketConfig) {
             fill: true,
             pointRadius: 0,
             borderWidth: 2,
-            tension: 0.1,
+            tension: 0,
             spanGaps: false,
             order: 4,
         });
@@ -118,7 +118,7 @@ function buildDatasets(hist, pred, sma20, sma50, marketConfig) {
             borderWidth: 2,
             pointRadius: 0,
             fill: false,
-            tension: 0.1,
+            tension: 0,
             order: 3,
         });
     }
@@ -135,7 +135,7 @@ function buildDatasets(hist, pred, sma20, sma50, marketConfig) {
             borderWidth: 1.5,
             borderDash: [3, 3],
             pointRadius: 0,
-            tension: 0.3,
+            tension: 0,
             order: 2,
         });
     }
@@ -152,7 +152,7 @@ function buildDatasets(hist, pred, sma20, sma50, marketConfig) {
             borderWidth: 1.5,
             borderDash: [3, 3],
             pointRadius: 0,
-            tension: 0.3,
+            tension: 0,
             order: 1,
         });
     }
@@ -195,10 +195,10 @@ function initChart(historicalData, predictionData, sma20Data, sma50Data, marketC
                             },
                         },
                         tooltip: {
-                            backgroundColor: '#1a2338', titleColor: '#f1f5f9',
-                            bodyColor: '#94a3b8', borderColor: '#1e293b',
+                            backgroundColor: '#1a1a1a', titleColor: '#f1f5f9',
+                            bodyColor: '#94a3b8', borderColor: '#2a2a2a',
                             borderWidth: 1, padding: 12, cornerRadius: 8,
-                            titleFont: { family: 'Inter, sans-serif', size: 13 },
+                            titleFont: { family: 'Outfit, sans-serif', size: 13 },
                             bodyFont: { family: 'JetBrains Mono, monospace', size: 12 },
                             callbacks: {
                                 label: function (context) {
@@ -212,14 +212,14 @@ function initChart(historicalData, predictionData, sma20Data, sma50Data, marketC
                     },
                     scales: {
                         x: {
-                            grid: { color: '#1e293b', drawBorder: false },
+                            grid: { color: '#2a2a2a', drawBorder: false },
                             ticks: {
                                 color: '#64748b', font: { family: 'JetBrains Mono, monospace', size: 10 },
                                 maxTicksLimit: 12, autoSkip: true,
                             },
                         },
                         y: {
-                            grid: { color: '#1e293b', drawBorder: false },
+                            grid: { color: '#2a2a2a', drawBorder: false },
                             ticks: {
                                 color: '#64748b', font: { family: 'JetBrains Mono, monospace', size: 10 },
                                 callback: function (value) { return value.toLocaleString(); },

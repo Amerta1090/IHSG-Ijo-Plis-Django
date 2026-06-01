@@ -3,36 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}IHSG Predictor{% endblock %}</title>
+    <title>{% block title %}Ijo Plis - Realita Hari Ini{% endblock %}</title>
     {% load static %}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/output.css' %}">
     <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}">
     {% block extra_head %}{% endblock %}
+    <style>
+        /* Brutalist overrides */
+        * { border-color: #333; }
+        body { background-color: #000; color: #fff; }
+        .brutal-border { border: 2px solid #333; }
+        .brutal-border-b { border-bottom: 2px solid #333; }
+    </style>
 </head>
-<body class="min-h-screen flex flex-col bg-[#0a0f1e] text-[#f1f5f9] font-sans">
+<body class="min-h-screen flex flex-col font-sans selection:bg-[#00ff00] selection:text-black">
 
-    <nav class="sticky top-0 z-50 bg-[#0a0f1e]/80 backdrop-blur-md border-b border-[#1e293b]">
+    <nav class="sticky top-0 z-50 bg-[#000] brutal-border-b">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <a href="/" class="flex items-center space-x-2">
-                    <span class="text-xl font-bold text-[#f59e0b]">IHSG</span>
-                    <span class="text-sm text-[#94a3b8] hidden sm:inline">Predictor</span>
+                    <span class="text-3xl font-black font-outfit uppercase tracking-tighter text-white">IJO PLIS</span>
+                    <span class="hidden sm:inline-block ml-2 text-[10px] font-mono bg-white text-black px-1.5 py-0.5 font-bold uppercase">v2.1 (Slightly Stable)</span>
                 </a>
                 <div class="flex items-center space-x-6">
-                    <div class="flex items-center bg-[#141b2d] rounded-lg p-0.5 border border-[#1e293b] w-fit">
+                    <div class="flex items-center bg-[#0a0a0a] brutal-border">
                         <a href="/"
-                            class="px-3 py-1.5 text-xs rounded-md transition font-medium {% if request.path == '/' %}bg-[#f59e0b] text-[#0a0f1e]{% else %}text-[#94a3b8] hover:text-[#f1f5f9]{% endif %}">
+                            class="px-4 py-1.5 text-xs transition font-bold font-mono uppercase {% if request.path == '/' %}bg-[#00ff00] text-black{% else %}text-gray-400 hover:text-white{% endif %}">
                             IHSG
                         </a>
+                        <div class="w-[2px] h-full bg-[#333]"></div>
                         <a href="/usdidr/"
-                            class="px-3 py-1.5 text-xs rounded-md transition font-medium {% if request.path == '/usdidr/' %}bg-[#f59e0b] text-[#0a0f1e]{% else %}text-[#94a3b8] hover:text-[#f1f5f9]{% endif %}">
+                            class="px-4 py-1.5 text-xs transition font-bold font-mono uppercase {% if request.path == '/usdidr/' %}bg-[#00ff00] text-black{% else %}text-gray-400 hover:text-white{% endif %}">
                             USD/IDR
                         </a>
                     </div>
-                    <a href="/about/" class="text-sm font-medium text-[#94a3b8] hover:text-[#f1f5f9] transition">About</a>
+                    <div class="hidden sm:flex text-[10px] font-mono text-gray-400 uppercase tracking-widest bg-[#0a0a0a] px-3 py-2 brutal-border">
+                        <span class="mr-2 text-white">SYS_STATE:</span>
+                        <span class="text-[#ffaa00] animate-pulse">Menunggu Koreksi Wajar</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -42,19 +53,17 @@
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="bg-[#141b2d]/50 border-t border-[#1e293b] py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col items-center space-y-4">
-                <div class="text-xs text-[#94a3b8] text-center max-w-lg leading-relaxed">
-                    <strong class="text-[#f59e0b]">DISCLAIMER:</strong>
-                    Semua prediksi bersifat indikatif dan bukan rekomendasi investasi.
-                    IHSG Predictor menggunakan model machine learning untuk estimasi — tidak menjamin akurasi.
-                    Selakukan analisis Anda sendiri sebelum mengambil keputusan investasi.
-                </div>
-                <div class="text-xs text-[#64748b]">
-                    &copy; {% now "Y" %} IHSG Predictor &mdash; Powered by Prophet &amp; Django
-                </div>
-            </div>
+    <footer class="bg-[#000] brutal-border-t overflow-hidden relative h-12 flex items-center">
+        <div class="whitespace-nowrap animate-marquee flex items-center font-mono text-[11px] font-bold uppercase tracking-widest text-gray-500">
+            <span class="mx-8 text-[#ff0000]">PERINGATAN KERAS:</span> Murni prediksi algoritma. Segala kerugian adalah tanggung jawab tangan anda sendiri. Market tidak peduli dengan perasaan anda.
+            <span class="mx-8 text-[#ff0000]">PERINGATAN KERAS:</span> Sesuai ekspektasi (merah) atau keajaiban sementara (hijau), kami hanya menampilkan angka. Bukan saran investasi.
+            <span class="mx-8 text-[#ff0000]">PERINGATAN KERAS:</span> Model sering halusinasi. Jangan all-in uang sekolah anak.
+            <span class="mx-8 text-white">&copy; {% now "Y" %} IJO PLIS CORP.</span>
+            <!-- Repeat for seamless scroll -->
+            <span class="mx-8 text-[#ff0000]">PERINGATAN KERAS:</span> Murni prediksi algoritma. Segala kerugian adalah tanggung jawab tangan anda sendiri. Market tidak peduli dengan perasaan anda.
+            <span class="mx-8 text-[#ff0000]">PERINGATAN KERAS:</span> Sesuai ekspektasi (merah) atau keajaiban sementara (hijau), kami hanya menampilkan angka. Bukan saran investasi.
+            <span class="mx-8 text-[#ff0000]">PERINGATAN KERAS:</span> Model sering halusinasi. Jangan all-in uang sekolah anak.
+            <span class="mx-8 text-white">&copy; {% now "Y" %} IJO PLIS CORP.</span>
         </div>
     </footer>
 
