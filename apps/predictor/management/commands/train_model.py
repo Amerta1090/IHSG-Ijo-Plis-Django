@@ -44,12 +44,17 @@ class Command(BaseCommand):
         metrics = TrainingService.evaluate(model, df)
         self.stdout.write(f"Metrics: MAE={metrics['mae']}, RMSE={metrics['rmse']}")
 
-        ModelVersion.objects.update(is_active=False)
         ModelVersion.objects.create(
             version=version,
             trained_at=timezone.now(),
             data_end_date=data_end,
             metrics=metrics,
-            is_active=True,
+            is_active=False,
         )
-        self.stdout.write(self.style.SUCCESS(f"Model v{version} set as active."))
+        ModelVersion.set_best_active()
+        best = ModelVersion.objects.filter(is_active=True).first()
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Best model: v{best.version} (MAE={best.metrics.get('mae', 'N/A')})"
+            )
+        )

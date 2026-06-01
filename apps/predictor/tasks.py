@@ -57,15 +57,16 @@ def retrain_pipeline(self):
     metrics = TrainingService.evaluate(model, hist_df)
     logger.info(f"Model v{version} metrics: {metrics}")
 
-    ModelVersion.objects.update(is_active=False)
     ModelVersion.objects.create(
         version=version,
         trained_at=datetime.now(),
         data_end_date=data_end,
         metrics=metrics,
-        is_active=True,
+        is_active=False,
     )
-    logger.info(f"Model v{version} set as active")
+    ModelVersion.set_best_active()
+    best = ModelVersion.objects.filter(is_active=True).first()
+    logger.info(f"Best model: v{best.version} (MAE={best.metrics.get('mae', 'N/A')})")
 
     # Step 4: Predict
     logger.info("Generating predictions...")

@@ -39,9 +39,14 @@ services:
       redis:
         condition: service_healthy
     environment:
-      DJANGO_SETTINGS_MODULE: config.settings.dev
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-change-me-in-production}
       DB_HOST: db
+      DB_NAME: ${DB_NAME:-ihsg_db}
+      DB_USER: ${DB_USER:-ihsg_user}
+      DB_PASSWORD: ${DB_PASSWORD:-ihsg_pass}
       REDIS_HOST: redis
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
 
   celery_worker:
     build: .
@@ -52,9 +57,14 @@ services:
       redis:
         condition: service_healthy
     environment:
-      DJANGO_SETTINGS_MODULE: config.settings.dev
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-change-me-in-production}
       DB_HOST: db
+      DB_NAME: ${DB_NAME:-ihsg_db}
+      DB_USER: ${DB_USER:-ihsg_user}
+      DB_PASSWORD: ${DB_PASSWORD:-ihsg_pass}
       REDIS_HOST: redis
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
 
   celery_beat:
     build: .
@@ -65,9 +75,14 @@ services:
       redis:
         condition: service_healthy
     environment:
-      DJANGO_SETTINGS_MODULE: config.settings.dev
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-change-me-in-production}
       DB_HOST: db
+      DB_NAME: ${DB_NAME:-ihsg_db}
+      DB_USER: ${DB_USER:-ihsg_user}
+      DB_PASSWORD: ${DB_PASSWORD:-ihsg_pass}
       REDIS_HOST: redis
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
 
 volumes:
   pgdata:

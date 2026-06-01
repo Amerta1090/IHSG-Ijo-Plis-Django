@@ -42,3 +42,16 @@ class ModelVersion(models.Model):
 
     def __str__(self) -> str:
         return f"v{self.version} ({self.trained_at.date()})"
+
+    @classmethod
+    def set_best_active(cls):
+        versions = cls.objects.all()
+        if not versions.exists():
+            return
+        best = min(
+            versions,
+            key=lambda v: v.metrics.get("mae", float("inf")),
+        )
+        cls.objects.update(is_active=False)
+        best.is_active = True
+        best.save(update_fields=["is_active"])

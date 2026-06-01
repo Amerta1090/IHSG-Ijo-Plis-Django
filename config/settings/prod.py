@@ -6,6 +6,19 @@ ALLOWED_HOSTS = os.environ.get(  # noqa: F405
     "ALLOWED_HOSTS", "localhost"
 ).split(",")
 
+MIDDLEWARE.insert(  # noqa: F405
+    1, "whitenoise.middleware.WhiteNoiseMiddleware"
+)
+
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True

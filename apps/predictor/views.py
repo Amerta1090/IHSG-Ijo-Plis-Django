@@ -174,12 +174,68 @@ def _get_dashboard_data(request=None):
 
 
 def index(request):
-    context = _get_dashboard_data(request)
+    try:
+        context = _get_dashboard_data(request)
+    except Exception:
+        context = {
+            "historical_json": "[]",
+            "predictions_json": "[]",
+            "ihsg_now": None,
+            "change_pct": 0,
+            "change_value": 0,
+            "week_change_pct": 0,
+            "week_change_value": 0,
+            "prediksi_30d": None,
+            "confidence_score": 0,
+            "sentiment": "Neutral",
+            "last_updated": None,
+            "active_model_version": None,
+            "historical_count": 0,
+            "prediction_count": 0,
+            "sma_20_json": "[]",
+            "sma_50_json": "[]",
+            "volatility": None,
+            "pred_vs_actual": [],
+            "pred_vs_actual_json": "[]",
+            "error": "Data sedang tidak tersedia. Silakan coba lagi nanti.",
+        }
     return render(request, "index.html", context)
 
 
+def about(request):
+    model_versions = list(ModelVersion.objects.all().order_by("-trained_at"))
+    historical_count = HistoricalData.objects.count()
+
+    model_stats = []
+    for mv in model_versions:
+        model_stats.append(
+            {
+                "version": mv.version,
+                "trained_at": mv.trained_at.strftime("%Y-%m-%d %H:%M:%S"),
+                "data_end_date": str(mv.data_end_date),
+                "mae": mv.metrics.get("mae"),
+                "rmse": mv.metrics.get("rmse"),
+                "is_active": mv.is_active,
+            }
+        )
+
+    active_stats = model_stats[0] if model_stats else None
+
+    context = {
+        "model_stats": model_stats,
+        "active_model": active_stats,
+        "historical_count": historical_count,
+        "model_count": len(model_versions),
+        "model_stats_json": json.dumps(model_stats),
+    }
+    return render(request, "about.html", context)
+
+
 def metrics_api(request):
-    data = _get_dashboard_data(request)
+    try:
+        data = _get_dashboard_data(request)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
     json_data = {
         "historical": json.loads(data["historical_json"]),
         "predictions": json.loads(data["predictions_json"]),
