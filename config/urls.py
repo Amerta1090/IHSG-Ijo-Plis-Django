@@ -7,6 +7,8 @@ from apps.predictor.views import (
     decomposition_api,
     health,
     metrics_api,
+    retrain_status_api,
+    trigger_retrain_api,
     usdidr_decomposition_api,
     usdidr_metrics_api,
 )
@@ -33,4 +35,6 @@ urlpatterns = [
         usdidr_decomposition_api,
         name="usdidr-decomposition-api",
     ),
+    path("api/trigger-retrain.json", trigger_retrain_api, name="trigger-retrain"),
+    path("api/retrain-status.json", retrain_status_api, name="retrain-status"),
 ]

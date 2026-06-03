@@ -1,6 +1,8 @@
 import json
+import threading
 from datetime import date, timedelta
 
+from django.core.management import call_command
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 
@@ -491,6 +493,56 @@ def usdidr_decomposition_api(request):
         return JsonResponse(result)
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
+
+
+_retrain_status = {
+    "running": False,
+    "message": "",
+    "step": "",
+    "progress": 0,
+}
+
+
+def trigger_retrain_api(request):
+    global _retrain_status
+
+    if _retrain_status["running"]:
+        return JsonResponse({
+            "status": "already_running",
+            "message": "Retrain already in progress",
+        })
+
+    _retrain_status = {
+        "running": True,
+        "message": "Starting retrain pipeline...",
+        "step": "starting",
+        "progress": 5,
+    }
+
+    def _run_retrain():
+        global _retrain_status
+        try:
+            _retrain_status["message"] = "Running retrain_all (fetch + train + predict)"
+            _retrain_status["step"] = "retraining"
+            _retrain_status["progress"] = 10
+            call_command("retrain_all")
+            _retrain_status["message"] = "Retrain complete!"
+            _retrain_status["step"] = "done"
+            _retrain_status["progress"] = 100
+        except Exception as e:
+            _retrain_status["message"] = f"Error: {e}"
+            _retrain_status["step"] = "error"
+        finally:
+            _retrain_status["running"] = False
+
+    thread = threading.Thread(target=_run_retrain, daemon=True)
+    thread.start()
+
+    return JsonResponse({"status": "started", "message": "Retrain started"})
+
+
+def retrain_status_api(request):
+    return JsonResponse(_retrain_status)
 
 
 def health(request):

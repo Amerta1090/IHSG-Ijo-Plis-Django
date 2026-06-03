@@ -67,18 +67,46 @@ function initRefreshButton() {
         var svg = this.querySelector('svg');
         var text = this.querySelector('span');
         if (svg) svg.classList.add('animate-spin');
-        if (text) text.textContent = 'Refreshing...';
+        if (text) text.textContent = 'Initializing...';
 
-        var endpoint = marketConfig ? marketConfig.apiEndpoint : '/api/metrics.json';
-        fetch(endpoint)
+        fetch('/api/trigger-retrain.json')
             .then(function (r) { return r.json(); })
             .then(function (data) {
-                window.location.reload();
+                if (text) text.textContent = 'Retraining... (fetch + predict)';
+                pollRetrainStatus();
             })
             .catch(function () {
-                window.location.reload();
+                if (text) text.textContent = 'Error starting retrain';
+                btn.disabled = false;
+                if (svg) svg.classList.remove('animate-spin');
             });
     });
+}
+
+function pollRetrainStatus() {
+    var text = document.querySelector('#refresh-btn span');
+    var svg = document.querySelector('#refresh-btn svg');
+    var btn = document.getElementById('refresh-btn');
+
+    var check = setInterval(function () {
+        fetch('/api/retrain-status.json')
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.step === 'done') {
+                    clearInterval(check);
+                    if (text) text.textContent = 'Complete! Reloading...';
+                    setTimeout(function () { window.location.reload(); }, 500);
+                } else if (data.step === 'error') {
+                    clearInterval(check);
+                    if (text) text.textContent = data.message;
+                    if (btn) btn.disabled = false;
+                    if (svg) svg.classList.remove('animate-spin');
+                } else if (text && data.message) {
+                    text.textContent = data.message;
+                }
+            })
+            .catch(function () {});
+    }, 2000);
 }
 
 function initFadeInObserver() {
