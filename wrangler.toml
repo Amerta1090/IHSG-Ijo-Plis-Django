@@ -1,16 +1,10 @@
 name = "ihsg-predictor"
-type = "webpack"
+main = "src/worker.js"
 compatibility_date = "2026-06-01"
 
-# This config is for Cloudflare Workers.
-# The Django backend cannot run on Workers directly.
-# Use this as a reverse proxy or API gateway in front of your Django server.
-# 
-# Deployment options:
-#   1. Railway / Fly.io / VPS + Cloudflare DNS (orange cloud proxy)
-#   2. Cloudflare Tunnel (cloudflared) → local/VPS Django server
-#   3. Static export + Cloudflare Pages (loses dynamic features)
-#
-# Workers route example (reverse proxy):
-# [routes]
-# example.com/* = {zone_id = "...", pattern = "example.com/*"}
+# Reverse proxy: passes all requests to your Django backend.
+# Django serves static files via WhiteNoise (already configured).
+# Set PROXY_ORIGIN in your Cloudflare Worker dashboard or wrangler secret.
+# Examples:
+#   PROXY_ORIGIN = "https://your-app.railway.app"
+#   PROXY_ORIGIN = "https://your-app.fly.dev"

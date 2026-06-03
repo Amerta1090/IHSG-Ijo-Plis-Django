@@ -1,3 +1,5 @@
+import dj_database_url  # noqa: F405
+
 from .base import *  # noqa: F403
 
 DEBUG = False
@@ -19,22 +21,12 @@ STORAGES = {
     },
 }
 
-# Supabase PostgreSQL — overrides base.py DATABASES
-SUPABASE_URL = os.environ.get("SUPABASE_URL")  # noqa: F405
-SUPABASE_DB_PASSWORD = os.environ.get("SUPABASE_DB_PASSWORD")  # noqa: F405
+DATABASE_URL = os.environ.get("DATABASE_URL")  # noqa: F405
 
-if SUPABASE_URL and SUPABASE_DB_PASSWORD:
-    DATABASES = {  # noqa: F405
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.environ.get("SUPABASE_DB_NAME", "postgres"),  # noqa: F405
-            "USER": os.environ.get("SUPABASE_DB_USER", "postgres"),  # noqa: F405
-            "PASSWORD": SUPABASE_DB_PASSWORD,
-            "HOST": SUPABASE_URL,
-            "PORT": os.environ.get("SUPABASE_DB_PORT", "5432"),  # noqa: F405
-            "OPTIONS": {"sslmode": "require"},
-        }
-    }
+if DATABASE_URL:
+    DATABASES["default"] = dj_database_url.parse(  # noqa: F405
+        DATABASE_URL, conn_max_age=600, ssl_require=True
+    )
 
 SECURE_SSL_REDIRECT = os.environ.get("SECURE_SSL_REDIRECT", "True") == "True"  # noqa: F405
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
